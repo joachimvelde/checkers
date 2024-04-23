@@ -1,54 +1,34 @@
-use bevy::{prelude::*, window::WindowResolution};
+use bevy::prelude::*;
 
-static WIDTH: f32 = 800.0;
-static HEIGHT: f32 = 800.0;
-static TILES: i32 = 8;
-
-#[derive(Component)]
-struct Tile;
-
-#[derive(Component)]
-struct Checker {
-    is_king: bool,
-    colour: CheckerColour
-}
-
-enum CheckerColour {
-    Red,
-    Black
-}
+const SCREEN_WIDTH: f32 = 800.0;
+const SCREEN_HEIGHT: f32 = 800.0;
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins.set(WindowPlugin {
-            primary_window: Some(Window {
-                title: "Checkers".to_string(),
-                resolution: WindowResolution::new(WIDTH, HEIGHT),
-                resizable: false,
-                ..default()
-            }),
-            ..default()
-        }))
+        .add_plugins(DefaultPlugins)
         .add_systems(Startup, setup)
-        .run()
+        .run();
 }
 
 fn setup(mut commands: Commands) {
     commands.spawn(Camera2dBundle::default());
+    create_board(&mut commands);
+}
 
-    let tile_width: f32 = WIDTH / TILES as f32;
-    let tile_height: f32 = HEIGHT / TILES as f32;
+fn create_board(commands: &mut Commands) {
+    let tile_width = SCREEN_WIDTH / 8.0;
+    let tile_height = SCREEN_WIDTH / 8.0;
 
-    for y in -TILES/2..TILES/2 {
-        for x in -TILES/2..TILES/2 {
-            let x_pos: f32 = x as f32 * tile_width + tile_width / 2.0;
-            let y_pos: f32 = y as f32 * tile_height + tile_height / 2.0;
+    for i in 0..8 {
+        for j in 0..8 {
+            let x = tile_width / 2.0 - SCREEN_WIDTH / 2.0 + tile_width * j as f32;
+            let y = tile_height / 2.0 - SCREEN_HEIGHT / 2.0 + tile_height * i as f32;
 
             let color;
-            if (x + y) % 2 == 0 {
-                color = Color::RED;
+            if (i + j) as f32 % 2.0 == 0.0 {
+                color = Color::WHITE;
             } else {
-                color = Color::GREEN;
+                color = Color::BLACK;
             }
 
             commands.spawn(SpriteBundle {
@@ -57,7 +37,7 @@ fn setup(mut commands: Commands) {
                     custom_size: Some(Vec2::new(tile_width, tile_height)),
                     ..default()
                 },
-                transform: Transform::from_xyz(x_pos, y_pos, 0.0),
+                transform: Transform::from_xyz(x, y, 0.0),
                 ..default()
             });
         }
