@@ -20,6 +20,12 @@ enum Player {
     Black
 }
 
+#[derive(PartialEq)]
+enum TileKind {
+    Black,
+    White
+}
+
 #[derive(Component, Debug)]
 struct Piece {
     kind: PieceKind,
@@ -33,7 +39,9 @@ struct Position {
 }
 
 #[derive(Component)]
-struct Tile;
+struct Tile {
+    kind: TileKind
+}
 
 #[derive(Resource)]
 struct DragState {
@@ -78,11 +86,11 @@ fn setup(mut commands: Commands) {
             let y = -SCREEN_SIZE / 2.0 + TILE_SIZE / 2.0 + TILE_SIZE * (7 - row) as f32;
 
             // Create tiles
-            let color;
+            let mut color = Color::BLACK;
+            let mut kind = TileKind::Black;
             if (row + col) as f32 % 2.0 == 0.0 {
                 color = Color::WHITE;
-            } else {
-                color = Color::BLACK;
+                kind = TileKind::White;
             }
             commands.spawn(SpriteBundle {
                 sprite: Sprite {
@@ -93,7 +101,7 @@ fn setup(mut commands: Commands) {
                 transform: Transform::from_xyz(x, y, 0.0),
                 ..default()
             })
-            .insert(Tile)
+            .insert(Tile { kind })
             .insert(Position{ row, col });
 
             // Create pieces
@@ -140,7 +148,8 @@ fn update
     window: Query<&Window, With<PrimaryWindow>>,
     q_camera: Query<(&Camera, &GlobalTransform)>,
     left_mouse: Res<ButtonInput<MouseButton>>,
-    mut pieces: Query<(Entity, &Piece, &mut Transform)>,
+    tiles: Query<(Entity, &Tile, &Transform), Without<Piece>>,
+    mut pieces: Query<(Entity, &Piece, &mut Transform), Without<Tile>>,
     mut drag: ResMut<DragState>
 )
 {
@@ -154,7 +163,7 @@ fn update
                     for (entity, piece, transform) in pieces.iter() {
                         // Detect hits
                         let center = transform.translation.truncate();
-                        if mouse_position.distance(center) <= PIECE_SIZE {
+                        if mouse_position.distance(center) <= PIECE_SIZE / 2.0 {
                             drag.piece = Some(entity);
                             drag.initial_position.x = transform.translation.x;
                             drag.initial_position.y = transform.translation.y;
@@ -162,14 +171,11 @@ fn update
                     }
                 }
 
-                // Check for drags
-                if left_mouse.pressed(MouseButton::Left) {
-                    if let Some(entity) = drag.piece {
-                        if let Ok((_, _, mut transform)) = pieces.get_mut(entity) {
-                            transform.translation.x = mouse_position.x;
-                            transform.translation.y = mouse_position.y;
-                            transform.translation.z = 2.0;
-                        }
+                if let Some(entity) = drag.piece {
+                    if let Ok((_, _, mut transform)) = pieces.get_mut(entity) {
+                        transform.translation.x = mouse_position.x;
+                        transform.translation.y = mouse_position.y;
+                        transform.translation.z = 2.0;
                     }
                 }
 
@@ -179,10 +185,17 @@ fn update
                         drag.piece = None;
                         if let Ok((_, _, mut transform)) = pieces.get_mut(entity) {
                             transform.translation.z = 1.0;
-                            if false {
-                                // TODO: Check if position is valid and snap to tile
+                            // Place at closest tile
+                            let mut placed = false;
+                            for (entity, tile, tile_transform) in tiles.iter() {
+                                let tile_center = tile_transform.translation.truncate();
+                                if mouse_position.distance(tile_center) <= TILE_SIZE / 2.0 && tile.kind == TileKind::Black {
+                                    transform.translation.x = tile_transform.translation.x;
+                                    transform.translation.y = tile_transform.translation.y;
+                                    placed = true;
+                                }
                             }
-                            else {
+                            if !placed {
                                 transform.translation.x = drag.initial_position.x;
                                 transform.translation.y = drag.initial_position.y;
                             }
