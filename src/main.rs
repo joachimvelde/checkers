@@ -167,6 +167,7 @@ fn update
                             drag.piece = Some(entity);
                             drag.initial_position.x = transform.translation.x;
                             drag.initial_position.y = transform.translation.y;
+                            break;
                         }
                     }
                 }
@@ -193,6 +194,7 @@ fn update
                                     transform.translation.x = tile_transform.translation.x;
                                     transform.translation.y = tile_transform.translation.y;
                                     placed = true;
+                                    break;
                                 }
                             }
                             if !placed {
