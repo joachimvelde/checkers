@@ -104,7 +104,7 @@ fn setup(mut commands: Commands) {
                         custom_size: Some(Vec2::new(PIECE_SIZE, PIECE_SIZE)),
                         ..default()
                     },
-                    transform: Transform::from_xyz(x, y, 0.0),
+                    transform: Transform::from_xyz(x, y, 1.0),
                     ..default()
                 })
                 .insert(Piece {
@@ -121,7 +121,7 @@ fn setup(mut commands: Commands) {
                         custom_size: Some(Vec2::new(PIECE_SIZE, PIECE_SIZE)),
                         ..default()
                     },
-                    transform: Transform::from_xyz(x, y, 0.0),
+                    transform: Transform::from_xyz(x, y, 1.0),
                     ..default()
                 })
                 .insert(Piece {
@@ -137,11 +137,10 @@ fn setup(mut commands: Commands) {
 fn update
 (
     mut commands: Commands,
-    left_mouse: Res<ButtonInput<MouseButton>>,
     window: Query<&Window, With<PrimaryWindow>>,
     q_camera: Query<(&Camera, &GlobalTransform)>,
-    tiles: Query<(&Tile, &Position, &Transform)>,
-    mut pieces: Query<(Entity, &Piece, &Position, &Transform)>,
+    left_mouse: Res<ButtonInput<MouseButton>>,
+    mut pieces: Query<(Entity, &Piece, &mut Transform)>,
     mut drag: ResMut<DragState>
 )
 {
@@ -152,12 +151,13 @@ fn update
             {
                 // Check for hits
                 if left_mouse.just_pressed(MouseButton::Left) {
-                    for (entity, piece, position, transform) in pieces.iter() {
+                    for (entity, piece, transform) in pieces.iter() {
                         // Detect hits
                         let center = transform.translation.truncate();
                         if mouse_position.distance(center) <= PIECE_SIZE {
-                            eprintln!("{:?} clicked!", piece);
                             drag.piece = Some(entity);
+                            drag.initial_position.x = transform.translation.x;
+                            drag.initial_position.y = transform.translation.y;
                         }
                     }
                 }
@@ -165,8 +165,27 @@ fn update
                 // Check for drags
                 if left_mouse.pressed(MouseButton::Left) {
                     if let Some(entity) = drag.piece {
-                        if let Ok(transform) = pieces.get_mut(entity) {
-                            eprintln!("Dragging");
+                        if let Ok((_, _, mut transform)) = pieces.get_mut(entity) {
+                            transform.translation.x = mouse_position.x;
+                            transform.translation.y = mouse_position.y;
+                            transform.translation.z = 2.0;
+                        }
+                    }
+                }
+
+                // Check for drops
+                if left_mouse.just_released(MouseButton::Left) {
+                    if let Some(entity) = drag.piece {
+                        drag.piece = None;
+                        if let Ok((_, _, mut transform)) = pieces.get_mut(entity) {
+                            transform.translation.z = 1.0;
+                            if false {
+                                // TODO: Check if position is valid and snap to tile
+                            }
+                            else {
+                                transform.translation.x = drag.initial_position.x;
+                                transform.translation.y = drag.initial_position.y;
+                            }
                         }
                     }
                 }
