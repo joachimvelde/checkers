@@ -32,7 +32,7 @@ struct Piece {
     owner: Player
 }
 
-#[derive(Component)]
+#[derive(Component, Debug)]
 struct Position {
     row: usize,
     col: usize
@@ -148,8 +148,8 @@ fn update
     window: Query<&Window, With<PrimaryWindow>>,
     q_camera: Query<(&Camera, &GlobalTransform)>,
     left_mouse: Res<ButtonInput<MouseButton>>,
-    tiles: Query<(Entity, &Tile, &Transform), Without<Piece>>,
-    mut pieces: Query<(Entity, &Piece, &mut Transform), Without<Tile>>,
+    tiles: Query<(Entity, &Tile, &Position, &Transform), Without<Piece>>,
+    mut pieces: Query<(Entity, &Piece, &mut Position, &mut Transform), Without<Tile>>,
     mut drag: ResMut<DragState>
 )
 {
@@ -160,7 +160,7 @@ fn update
             {
                 // Check for hits
                 if left_mouse.just_pressed(MouseButton::Left) {
-                    for (entity, piece, transform) in pieces.iter() {
+                    for (entity, piece, position, transform) in pieces.iter() {
                         // Detect hits
                         let center = transform.translation.truncate();
                         if mouse_position.distance(center) <= PIECE_SIZE / 2.0 {
@@ -173,7 +173,7 @@ fn update
                 }
 
                 if let Some(entity) = drag.piece {
-                    if let Ok((_, _, mut transform)) = pieces.get_mut(entity) {
+                    if let Ok((_, _, _, mut transform)) = pieces.get_mut(entity) {
                         transform.translation.x = mouse_position.x;
                         transform.translation.y = mouse_position.y;
                         transform.translation.z = 2.0;
@@ -184,22 +184,26 @@ fn update
                 if left_mouse.just_released(MouseButton::Left) {
                     if let Some(entity) = drag.piece {
                         drag.piece = None;
-                        if let Ok((_, _, mut transform)) = pieces.get_mut(entity) {
-                            transform.translation.z = 1.0;
+                        if let Ok((_, _, mut piece_position, mut piece_transform)) = pieces.get_mut(entity) {
+                            piece_transform.translation.z = 1.0;
                             // Place at closest tile
                             let mut placed = false;
-                            for (entity, tile, tile_transform) in tiles.iter() {
+                            for (entity, tile, tile_position, tile_transform) in tiles.iter() {
                                 let tile_center = tile_transform.translation.truncate();
                                 if mouse_position.distance(tile_center) <= TILE_SIZE / 2.0 && tile.kind == TileKind::Black {
-                                    transform.translation.x = tile_transform.translation.x;
-                                    transform.translation.y = tile_transform.translation.y;
+                                    piece_transform.translation.x = tile_transform.translation.x;
+                                    piece_transform.translation.y = tile_transform.translation.y;
+                                    // Update position of piece
+                                    piece_position.row = tile_position.row;
+                                    piece_position.col = tile_position.col;
+                                    println!("{:?}", piece_position);
                                     placed = true;
                                     break;
                                 }
                             }
                             if !placed {
-                                transform.translation.x = drag.initial_position.x;
-                                transform.translation.y = drag.initial_position.y;
+                                piece_transform.translation.x = drag.initial_position.x;
+                                piece_transform.translation.y = drag.initial_position.y;
                             }
                         }
                     }
