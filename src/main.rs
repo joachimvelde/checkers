@@ -208,10 +208,11 @@ fn update
                             for (entity, tile, tile_position, tile_transform) in tiles.iter() {
                                 let tile_center = tile_transform.translation.truncate();
                                 if mouse_position.distance(tile_center) <= TILE_SIZE / 2.0 && tile.kind == TileKind::Black {
+                                    let old_pos: Position = *piece_position;
                                     let new_pos: Position = *tile_position;
 
                                     // Check if the position is occupied
-                                    if position_is_valid(&pieces_vec, new_pos) {
+                                    if position_is_valid(&pieces_vec, &piece, old_pos, new_pos) {
                                         piece_transform.translation.x = tile_transform.translation.x;
                                         piece_transform.translation.y = tile_transform.translation.y;
 
@@ -242,12 +243,30 @@ fn update
 }
 
 // TODO: Add rule checks
-fn position_is_valid(pieces_vec: &Vec<(Piece, Position)>, new_pos: Position) -> bool {
+fn position_is_valid(pieces_vec: &Vec<(Piece, Position)>, piece: &Piece, old_pos: Position, new_pos: Position) -> bool {
+    // New position cannot be occupied
     let mut valid = true;
     for (_piece, pos) in pieces_vec.iter() {
         if new_pos == *pos {
             valid = false;
         }
+    }
+
+    // TODO: Add capturing pieces
+    match (piece.owner, piece.kind) {
+        (Player::Red, PieceKind::Regular) => {
+            if !(new_pos.row == old_pos.row + 1
+                && (new_pos.col == old_pos.col - 1 || new_pos.col == old_pos.col + 1)) {
+                    valid = false;
+                } 
+        },
+        (Player::Black, PieceKind::Regular) => {
+            if !(new_pos.row == old_pos.row - 1
+                && (new_pos.col == old_pos.col - 1 || new_pos.col == old_pos.col + 1)) {
+                    valid = false;
+                } 
+        },
+        _ => eprintln!("Unimplemented logic at position_is_valid")
     }
 
     valid
