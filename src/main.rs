@@ -34,8 +34,8 @@ struct Piece {
 
 #[derive(Component, Copy, Clone, PartialEq, Debug)]
 struct Position {
-    row: usize,
-    col: usize
+    row: i32,
+    col: i32
 }
 
 #[derive(Component)]
@@ -198,6 +198,7 @@ fn update
                 }
 
                 // Check for drops
+                let mut kill_position = Position { row: -1, col: -1 };
                 if left_mouse.just_released(MouseButton::Left) {
                     if let Some(entity) = drag.piece {
                         drag.piece = None;
@@ -205,14 +206,15 @@ fn update
                             piece_transform.translation.z = 1.0;
                             // Place at closest tile
                             let mut placed = false;
-                            for (entity, tile, tile_position, tile_transform) in tiles.iter() {
+                            for (_entity, tile, tile_position, tile_transform) in tiles.iter() {
                                 let tile_center = tile_transform.translation.truncate();
                                 if mouse_position.distance(tile_center) <= TILE_SIZE / 2.0 && tile.kind == TileKind::Black {
                                     let old_pos: Position = *piece_position;
                                     let new_pos: Position = *tile_position;
 
                                     // Check if the position is occupied
-                                    if position_is_valid(&pieces_vec, &piece, old_pos, new_pos) {
+                                    let (position_valid, kill_pos_temp) = position_is_valid(&pieces_vec, &piece, old_pos, new_pos);
+                                    if position_valid {
                                         piece_transform.translation.x = tile_transform.translation.x;
                                         piece_transform.translation.y = tile_transform.translation.y;
 
@@ -224,6 +226,8 @@ fn update
 
                                         // Update player turn
                                         turn.kind = if piece.owner == Player::Black { Player::Red } else { Player::Black };
+
+                                        kill_position = kill_pos_temp;
 
                                         break;
                                     } else {
@@ -237,37 +241,69 @@ fn update
                                 piece_transform.translation.y = drag.initial_position.y;
                             }
                         }
+                        // Despawn killed piece
+                        if kill_position.row != -1 {
+                            for (entity, _, position, _) in pieces.iter() {
+                                if *position == kill_position {
+                                    commands.entity(entity).despawn();
+                                }
+                            }
+                        }
                     }
                 }
             }
 }
 
-// TODO: Add rule checks
-fn position_is_valid(pieces_vec: &Vec<(Piece, Position)>, piece: &Piece, old_pos: Position, new_pos: Position) -> bool {
+fn position_is_valid(pieces_vec: &Vec<(Piece, Position)>, piece: &Piece, old_pos: Position, new_pos: Position) -> (bool, Position) {
     // New position cannot be occupied
-    let mut valid = true;
-    for (_piece, pos) in pieces_vec.iter() {
-        if new_pos == *pos {
-            valid = false;
-        }
-    }
+    let mut valid = false;
+    let mut kill_pos = Position { row: -1, col: -1 };
 
     // TODO: Add capturing pieces
     match (piece.owner, piece.kind) {
         (Player::Red, PieceKind::Regular) => {
-            if !(new_pos.row == old_pos.row + 1
-                && (new_pos.col == old_pos.col - 1 || new_pos.col == old_pos.col + 1)) {
-                    valid = false;
-                } 
+            if new_pos.row == old_pos.row + 1
+                && (new_pos.col == old_pos.col - 1 || new_pos.col == old_pos.col + 1) {
+                    valid = true;
+            } 
+
+            // Diagonal jump kill
+            if new_pos.row == old_pos.row + 2
+                && (new_pos.col == old_pos.col - 2 || new_pos.col == old_pos.col + 2) {
+                    for (piece, pos) in pieces_vec.iter() {
+                        if pos.row == new_pos.row - 1
+                            && (pos.col == new_pos.col - 1 || pos.col == new_pos.col + 1)
+                            && piece.owner == Player::Black {
+                            valid = true;
+                            kill_pos = *pos;
+                            break;
+                        }
+                    }
+            } 
         },
+        // Moving any piece to 4, 1 causes a poison error
         (Player::Black, PieceKind::Regular) => {
-            if !(new_pos.row == old_pos.row - 1
-                && (new_pos.col == old_pos.col - 1 || new_pos.col == old_pos.col + 1)) {
-                    valid = false;
-                } 
+            if new_pos.row == old_pos.row - 1
+                && (new_pos.col == old_pos.col - 1 || new_pos.col == old_pos.col + 1) {
+                    valid = true;
+            } 
+
+            if new_pos.row == old_pos.row - 2
+                && (new_pos.col == old_pos.col - 2 || new_pos.col == old_pos.col + 2) {
+                    for (piece, pos) in pieces_vec.iter() {
+                        if pos.row == new_pos.row + 1
+                            && (pos.col == new_pos.col - 1 || pos.col == new_pos.col + 1)
+                            && piece.owner == Player::Red {
+                            valid = true;
+                            kill_pos = *pos;
+                            break;
+                        }
+                    }
+            } 
         },
         _ => eprintln!("Unimplemented logic at position_is_valid")
     }
 
-    valid
+    (valid, kill_pos)
 }
+
