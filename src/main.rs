@@ -8,13 +8,13 @@ const SCREEN_SIZE: f32 = 800.0;
 const TILE_SIZE: f32 = SCREEN_SIZE / 8.0;
 const PIECE_SIZE: f32 = TILE_SIZE / 2.0;
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 enum PieceKind {
     Regular,
     King
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 enum Player {
     Red,
     Black
@@ -26,13 +26,13 @@ enum TileKind {
     White
 }
 
-#[derive(Component, Debug)]
+#[derive(Component, Copy, Clone, Debug)]
 struct Piece {
     kind: PieceKind,
     owner: Player
 }
 
-#[derive(Component, Debug)]
+#[derive(Component, Copy, Clone, PartialEq, Debug)]
 struct Position {
     row: usize,
     col: usize
@@ -153,6 +153,8 @@ fn update
     mut drag: ResMut<DragState>
 )
 {
+    let pieces_vec: Vec<(Piece, Position)> = pieces.iter().map(|(_, piece, position, _)| return (*piece, *position)).collect();
+
     let (camera, camera_transform) = q_camera.single();
     if let Some(mouse_position) = window.single().cursor_position()
         .and_then(|cursor| camera.viewport_to_world(camera_transform, cursor))
@@ -184,23 +186,32 @@ fn update
                 if left_mouse.just_released(MouseButton::Left) {
                     if let Some(entity) = drag.piece {
                         drag.piece = None;
-                        if let Ok((_, _, mut piece_position, mut piece_transform)) = pieces.get_mut(entity) {
+                        if let Ok((_, piece, mut piece_position, mut piece_transform)) = pieces.get_mut(entity) {
                             piece_transform.translation.z = 1.0;
                             // Place at closest tile
                             let mut placed = false;
                             for (entity, tile, tile_position, tile_transform) in tiles.iter() {
                                 let tile_center = tile_transform.translation.truncate();
                                 if mouse_position.distance(tile_center) <= TILE_SIZE / 2.0 && tile.kind == TileKind::Black {
-                                    piece_transform.translation.x = tile_transform.translation.x;
-                                    piece_transform.translation.y = tile_transform.translation.y;
-                                    // Update position of piece
-                                    piece_position.row = tile_position.row;
-                                    piece_position.col = tile_position.col;
-                                    println!("{:?}", piece_position);
-                                    placed = true;
-                                    break;
+                                    let new_pos: Position = *tile_position;
+
+                                    // Check if the position is occupied
+                                    if position_is_valid(&pieces_vec, new_pos) {
+                                        piece_transform.translation.x = tile_transform.translation.x;
+                                        piece_transform.translation.y = tile_transform.translation.y;
+
+                                        // Update position of piece
+                                        piece_position.row = tile_position.row;
+                                        piece_position.col = tile_position.col;
+                                        println!("{:?}", piece_position);
+                                        placed = true;
+                                        break;
+                                    } else {
+                                        println!("Attempted to move to an invalid position");
+                                    }
                                 }
                             }
+                            // Reset position
                             if !placed {
                                 piece_transform.translation.x = drag.initial_position.x;
                                 piece_transform.translation.y = drag.initial_position.y;
@@ -209,4 +220,16 @@ fn update
                     }
                 }
             }
+}
+
+// TODO: Add rule checks
+fn position_is_valid(pieces_vec: &Vec<(Piece, Position)>, new_pos: Position) -> bool {
+    let mut valid = true;
+    for (_piece, pos) in pieces_vec.iter() {
+        if new_pos == *pos {
+            valid = false;
+        }
+    }
+
+    valid
 }
