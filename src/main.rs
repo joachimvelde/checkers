@@ -221,7 +221,6 @@ fn update
                                         // Update position of piece
                                         piece_position.row = tile_position.row;
                                         piece_position.col = tile_position.col;
-                                        println!("{:?}", piece_position);
                                         placed = true;
 
                                         // Update player turn
