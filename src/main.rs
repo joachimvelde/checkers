@@ -8,13 +8,13 @@ const SCREEN_SIZE: f32 = 800.0;
 const TILE_SIZE: f32 = SCREEN_SIZE / 8.0;
 const PIECE_SIZE: f32 = TILE_SIZE / 2.0;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, PartialEq, Clone)]
 enum PieceKind {
     Regular,
     King
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, PartialEq, Clone)]
 enum Player {
     Red,
     Black
@@ -50,12 +50,25 @@ struct DragState {
     offset: Vec2
 }
 
+#[derive(Resource)]
+struct TurnState {
+    kind: Player
+}
+
 impl DragState {
     fn new() -> Self {
         Self {
             piece: None,
             initial_position: Vec2::default(),
             offset: Vec2::default()
+        }
+    }
+}
+
+impl TurnState {
+    fn new() -> Self {
+        Self {
+            kind: Player::Red // Red starts
         }
     }
 }
@@ -74,6 +87,7 @@ fn main() {
         .add_systems(Startup, setup)
         .add_systems(Update, update)
         .insert_resource(DragState::new())
+        .insert_resource(TurnState::new())
         .run();
 }
 
@@ -150,7 +164,8 @@ fn update
     left_mouse: Res<ButtonInput<MouseButton>>,
     tiles: Query<(Entity, &Tile, &Position, &Transform), Without<Piece>>,
     mut pieces: Query<(Entity, &Piece, &mut Position, &mut Transform), Without<Tile>>,
-    mut drag: ResMut<DragState>
+    mut drag: ResMut<DragState>,
+    mut turn: ResMut<TurnState>
 )
 {
     let pieces_vec: Vec<(Piece, Position)> = pieces.iter().map(|(_, piece, position, _)| return (*piece, *position)).collect();
@@ -165,7 +180,7 @@ fn update
                     for (entity, piece, position, transform) in pieces.iter() {
                         // Detect hits
                         let center = transform.translation.truncate();
-                        if mouse_position.distance(center) <= PIECE_SIZE / 2.0 {
+                        if mouse_position.distance(center) <= PIECE_SIZE / 2.0 && piece.owner == turn.kind {
                             drag.piece = Some(entity);
                             drag.initial_position.x = transform.translation.x;
                             drag.initial_position.y = transform.translation.y;
@@ -205,6 +220,10 @@ fn update
                                         piece_position.col = tile_position.col;
                                         println!("{:?}", piece_position);
                                         placed = true;
+
+                                        // Update player turn
+                                        turn.kind = if piece.owner == Player::Black { Player::Red } else { Player::Black };
+
                                         break;
                                     } else {
                                         println!("Attempted to move to an invalid position");
