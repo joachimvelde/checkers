@@ -42,6 +42,7 @@ def get_moves(board, position):
     player = board[position[0]][position[1]]
     if player == 'R': dir = ((-1, -1), (-1, 1)) # Red can move up left or up right
     if player == 'B': dir = (( 1, -1), ( 1, 1)) # Black can move down left or down right
+    if player == "RK" or player == "BK": dir = ((1, 1), (1, -1), (-1, 1), (-1, -1)) # Kings can do both
 
     moves = []
 
@@ -66,7 +67,7 @@ def get_all_moves(board, player):
     moves = []
     for r in range(ROWS):
         for c in range(COLS):
-            if board[r][c] == player:
+            if board[r][c] == player or board[r][c] == player + 'K':
                 moves.extend(get_moves(board, (r, c)))
     return moves
 
@@ -83,7 +84,6 @@ def apply_move(board, move):
     if abs(dst[0] - src[0]) > 1:
         board[(src[0] + dst[0]) // 2][(src[1] + dst[1]) // 2] = None
 
-    # TODO: Implement kings
     if dst[0] == 0 and board[dst[0]][dst[1]] == 'R': board[dst[0]][dst[1]] = "RK"
     if dst[0] == 7 and board[dst[0]][dst[1]] == 'B': board[dst[0]][dst[1]] = "BK"
 
@@ -96,8 +96,8 @@ def get_winner(board):
 
     for r in range(ROWS):
         for c in range(COLS):
-            if board[r][c] == 'B': blacks += 1
-            if board[r][c] == 'R': reds   += 1
+            if board[r][c] == 'B' or board[r][c] == "BK": blacks += 1
+            if board[r][c] == 'R' or board[r][c] == "RK": reds   += 1
 
     if blacks == 0: return 'R'
     if reds   == 0: return 'B'
@@ -105,7 +105,7 @@ def get_winner(board):
 
 def get_player_move(board, player):
     moves = get_all_moves(board, player)
-    time.sleep(0.1)
+    time.sleep(0.01)
     if len(moves) > 0:
         return moves[random.randint(0, len(moves) - 1)]
     return None
@@ -138,7 +138,7 @@ def draw_board(board, surface):
 
 # --- Q-learning functions ---
 def init_q():
-    pass # Init the Q-table
+    pass
 
 # Chooses an action based on an epsilon-greedy policy
 def choose_action(Q, state, valid_moves, epsilon):
@@ -174,6 +174,7 @@ class App:
         # Handle each turn
         if is_game_over(self.board):
             print(get_winner(self.board), "wins!")
+            time.sleep(1)
             self.board = init_board()
         else:
             move = get_player_move(self.board, self.player_turn)
