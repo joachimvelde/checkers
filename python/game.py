@@ -17,6 +17,7 @@ KING_MARK_RADIUS = 10
 
 PIECE_VALUE = 3
 KING_VALUE = 2
+CENTER_REWARD = 5
 
 """
 The board is represented as a two-dimensional array with pieces represented as characters,
@@ -140,7 +141,6 @@ def draw_board(board, surface):
 
 
 # --- Minimax functions ---
-# TODO: Add reward for controlling the center of the board
 def state_value(board):
     value = 0
     for r in range(ROWS):
@@ -149,6 +149,13 @@ def state_value(board):
             if board[r][c] == 'R': value -= PIECE_VALUE
             if board[r][c] == 'BK': value += KING_VALUE
             if board[r][c] == 'RK': value -= KING_VALUE
+
+            # Center control reward
+            if (board[r][c] == 'B' or board[r][c] == 'BK') and (r > 2 and r < 6 and c > 2 and c < 6):
+                value += CENTER_REWARD
+            if (board[r][c] == 'R' or board[r][c] == 'RK') and (r > 2 and r < 6 and c > 2 and c < 6):
+                value -= CENTER_REWARD
+
     return value
 
 # Returns a new board (deep copy) with applied move

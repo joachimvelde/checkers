@@ -8,7 +8,7 @@ class Bot:
 
     def get_move(self, board):
         value, move = minimax(board, self.colour, MINIMAX_DEPTH)
-        time.sleep(1)
+        time.sleep(0.1)
         print(move, value)
         return move
 
