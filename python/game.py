@@ -1,4 +1,6 @@
 import pygame
+import time
+import random
 
 # Board constants
 WIDTH = 800
@@ -7,7 +9,8 @@ ROWS = 8
 COLS = 8
 TILE_WIDTH = WIDTH / COLS
 TILE_HEIGHT = HEIGHT / ROWS
-PIECE_RADIUS = 25
+PIECE_RADIUS = 30
+KING_MARK_RADIUS = 10
 
 """
 The board is represented as a two-dimensional array with pieces represented as characters,
@@ -28,9 +31,12 @@ def init_board():
              ['R', None, 'R', None, 'R', None, 'R', None]]
     return board
 
+def within_bounds(position):
+    return position[0] >= 0 and position[0] < ROWS and position[1] >= 0 and position[1] < COLS
+
 def get_moves(board, position):
     assert position[0] >= 0 and position[0] < ROWS and position[1] >= 0 and position[1] < COLS
-    assert board[position[0]][position[1]] != None
+    assert board[position[0]][position[1]] is not None
 
     dir = ((None, None), (None, None)) # Avoid editor warnings
     player = board[position[0]][position[1]]
@@ -43,19 +49,18 @@ def get_moves(board, position):
         dest = (position[0] + dr, position[1] + dc)
 
         # Check bounds
-        if dest[0] < 0 or dest[0] >= ROWS or dest[1] < 0 or dest[1] >= COLS:
-            continue
+        if not within_bounds(dest): continue
 
         # Empty moves then capturing moves
-        if board[dest[0]][dest[1]] == None:
+        if board[dest[0]][dest[1]] is None:
             moves.append((position, dest))
         elif board[dest[0]][dest[1]] != player:
             dest = (dest[0] + dr, dest[1] + dc)
             # Check for out of bounds
-            if dest[0] < 0 or dest[0] >= ROWS or dest[1] < 0 or dest[1] >= COLS and board[dest[0]][dest[1]] == None:
+            if within_bounds(dest) and board[dest[0]][dest[1]] is None:
                 moves.append((position, dest))
-                        
-    return moves 
+
+    return moves
 
 def get_all_moves(board, player):
     moves = []
@@ -74,6 +79,14 @@ def apply_move(board, move):
     board[dst[0]][dst[1]] = board[src[0]][src[1]]
     board[src[0]][src[1]] = None
 
+    # Handle captures
+    if abs(dst[0] - src[0]) > 1:
+        board[(src[0] + dst[0]) // 2][(src[1] + dst[1]) // 2] = None
+
+    # TODO: Implement kings
+    if dst[0] == 0 and board[dst[0]][dst[1]] == 'R': board[dst[0]][dst[1]] = "RK"
+    if dst[0] == 7 and board[dst[0]][dst[1]] == 'B': board[dst[0]][dst[1]] = "BK"
+
 def is_game_over(board):
     return get_winner(board) != None
 
@@ -90,6 +103,12 @@ def get_winner(board):
     if reds   == 0: return 'B'
     return None
 
+def get_player_move(board, player):
+    moves = get_all_moves(board, player)
+    time.sleep(0.1)
+    if len(moves) > 0:
+        return moves[random.randint(0, len(moves) - 1)]
+    return None
 
 # - Drawing functions -
 def draw_tiles(surface):
@@ -104,9 +123,12 @@ def draw_pieces(board, surface):
         for c in range(COLS):
             if board[r][c] is None: continue
 
-            colour = pygame.Color(255, 0, 120) if board[r][c] == 'B' else pygame.Color(255, 0, 0)
+            colour = pygame.Color(255, 0, 120) if board[r][c][0] == 'B' else pygame.Color(255, 0, 0)
             center = (TILE_WIDTH / 2 + c * TILE_WIDTH, TILE_HEIGHT / 2 + r * TILE_HEIGHT)
             pygame.draw.circle(surface, colour, center, PIECE_RADIUS)
+
+            if board[r][c] == 'BK' or board[r][c] == 'RK':
+                pygame.draw.circle(surface, pygame.Color(255, 255, 255), center, KING_MARK_RADIUS)
 
 def draw_board(board, surface):
     draw_tiles(surface)
@@ -136,6 +158,7 @@ class App:
         clock = pygame.time.Clock()
 
         self.board = init_board()
+        self.player_turn = 'B' # Black starts
 
         while self.running:
             self.update()
@@ -147,6 +170,16 @@ class App:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
+
+        # Handle each turn
+        if is_game_over(self.board):
+            print(get_winner(self.board), "wins!")
+            self.board = init_board()
+        else:
+            move = get_player_move(self.board, self.player_turn)
+            if is_valid_move(self.board, self.player_turn, move):
+                apply_move(self.board, move)
+            self.player_turn = 'R' if self.player_turn == 'B' else 'B'
 
     def draw(self):
         draw_board(self.board, self.screen)
