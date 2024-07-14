@@ -52,9 +52,7 @@ def get_moves(board, position):
         elif board[dest[0]][dest[1]] != player:
             dest = (dest[0] + dr, dest[1] + dc)
             # Check for out of bounds
-            if dest[0] < 0 or dest[0] >= ROWS or dest[1] < 0 or dest[1] >= COLS:
-                continue
-            if board[dest[0]][dest[1]] == None:
+            if dest[0] < 0 or dest[0] >= ROWS or dest[1] < 0 or dest[1] >= COLS and board[dest[0]][dest[1]] == None:
                 moves.append((position, dest))
                         
     return moves 
