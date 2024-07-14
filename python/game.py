@@ -7,6 +7,14 @@ ROWS = 8
 COLS = 8
 TILE_WIDTH = WIDTH / COLS
 TILE_HEIGHT = HEIGHT / ROWS
+PIECE_RADIUS = 25
+
+"""
+The board is represented as a two-dimensional array with pieces represented as characters,
+and empty tiles as None.
+
+Moves are represented as a tuple containing two tuples on the form: ((from), (to)).
+"""
 
 # --- Game functions ---
 def init_board():
@@ -20,21 +28,70 @@ def init_board():
              ['R', None, 'R', None, 'R', None, 'R', None]]
     return board
 
+def get_moves(board, position):
+    assert position[0] >= 0 and position[0] < ROWS and position[1] >= 0 and position[1] < COLS
+    assert board[position[0]][position[1]] != None
 
-def valid_move(board, move):
-    pass
+    dir = ((None, None), (None, None)) # Avoid editor warnings
+    player = board[position[0]][position[1]]
+    if player == 'R': dir = ((-1, -1), (-1, 1)) # Red can move up left or up right
+    if player == 'B': dir = (( 1, -1), ( 1, 1)) # Black can move down left or down right
+
+    moves = []
+
+    for dr, dc in dir:
+        dest = (position[0] + dr, position[1] + dc)
+
+        # Check bounds
+        if dest[0] < 0 or dest[0] >= ROWS or dest[1] < 0 or dest[1] >= COLS:
+            continue
+
+        # Empty moves then capturing moves
+        if board[dest[0]][dest[1]] == None:
+            moves.append((position, dest))
+        elif board[dest[0]][dest[1]] != player:
+            dest = (dest[0] + dr, dest[1] + dc)
+            # Check for out of bounds
+            if dest[0] < 0 or dest[0] >= ROWS or dest[1] < 0 or dest[1] >= COLS:
+                continue
+            if board[dest[0]][dest[1]] == None:
+                moves.append((position, dest))
+                        
+    return moves 
+
+def get_all_moves(board, player):
+    moves = []
+    for r in range(ROWS):
+        for c in range(COLS):
+            if board[r][c] == player:
+                moves.extend(get_moves(board, (r, c)))
+    return moves
+
+def is_valid_move(board, player, move):
+    return move in get_all_moves(board, player)
 
 def apply_move(board, move):
-    pass
+    src = move[0]
+    dst = move[1]
+    board[dst[0]][dst[1]] = board[src[0]][src[1]]
+    board[src[0]][src[1]] = None
 
-def get_valid_moves(board, player):
-    pass
-
-def game_over(board):
-    pass
+def is_game_over(board):
+    return get_winner(board) != None
 
 def get_winner(board):
-    pass
+    blacks = 0
+    reds = 0
+
+    for r in range(ROWS):
+        for c in range(COLS):
+            if board[r][c] == 'B': blacks += 1
+            if board[r][c] == 'R': reds   += 1
+
+    if blacks == 0: return 'R'
+    if reds   == 0: return 'B'
+    return None
+
 
 # - Drawing functions -
 def draw_tiles(surface):
@@ -45,11 +102,19 @@ def draw_tiles(surface):
             pygame.draw.rect(surface, colour, rect)
 
 def draw_pieces(board, surface):
-    pass
+    for r in range(ROWS):
+        for c in range(COLS):
+            if board[r][c] is None: continue
+
+            colour = pygame.Color(255, 0, 120) if board[r][c] == 'B' else pygame.Color(255, 0, 0)
+            center = (TILE_WIDTH / 2 + c * TILE_WIDTH, TILE_HEIGHT / 2 + r * TILE_HEIGHT)
+            pygame.draw.circle(surface, colour, center, PIECE_RADIUS)
 
 def draw_board(board, surface):
     draw_tiles(surface)
     draw_pieces(board, surface)
+
+
 
 # --- Q-learning functions ---
 def init_q():
