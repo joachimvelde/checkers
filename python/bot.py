@@ -1,13 +1,14 @@
+from game import *
+
+MINIMAX_DEPTH = 2
+
 class Bot:
-    def __init__(self, colour, Q=None, epsilon=0.1, alpha=0.1, gamma=0.9):
+    def __init__(self, colour):
         self.colour = colour
-        self.Q = Q
-        self.epsilon = epsilon
-        self.alpha = alpha
-        self.gamma = gamma
 
-    def select_move(self, board):
-        pass
+    def get_move(self, board):
+        value, move = minimax(board, self.colour, MINIMAX_DEPTH)
+        time.sleep(1)
+        print(move, value)
+        return move
 
-    def learn(self, state, action, reward, next_state):
-        pass

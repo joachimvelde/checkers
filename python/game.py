@@ -1,6 +1,9 @@
 import pygame
 import time
 import random
+import copy
+import math
+from bot import *
 
 # Board constants
 WIDTH = 800
@@ -12,11 +15,16 @@ TILE_HEIGHT = HEIGHT / ROWS
 PIECE_RADIUS = 30
 KING_MARK_RADIUS = 10
 
+PIECE_VALUE = 3
+KING_VALUE = 2
+
 """
 The board is represented as a two-dimensional array with pieces represented as characters,
 and empty tiles as None.
 
 Moves are represented as a tuple containing two tuples on the form: ((from), (to)).
+
+Black will try to maximise the state value, while red will want to minimise it.
 """
 
 # --- Game functions ---
@@ -103,12 +111,7 @@ def get_winner(board):
     if reds   == 0: return 'B'
     return None
 
-def get_player_move(board, player):
-    moves = get_all_moves(board, player)
-    time.sleep(0.01)
-    if len(moves) > 0:
-        return moves[random.randint(0, len(moves) - 1)]
-    return None
+
 
 # - Drawing functions -
 def draw_tiles(surface):
@@ -136,19 +139,48 @@ def draw_board(board, surface):
 
 
 
-# --- Q-learning functions ---
-def init_q():
-    pass
+# --- Minimax functions ---
+# TODO: Add reward for controlling the center of the board
+def state_value(board):
+    value = 0
+    for r in range(ROWS):
+        for c in range(COLS):
+            if board[r][c] == 'B': value += PIECE_VALUE
+            if board[r][c] == 'R': value -= PIECE_VALUE
+            if board[r][c] == 'BK': value += KING_VALUE
+            if board[r][c] == 'RK': value -= KING_VALUE
+    return value
 
-# Chooses an action based on an epsilon-greedy policy
-def choose_action(Q, state, valid_moves, epsilon):
-    pass
+# Returns a new board (deep copy) with applied move
+def result(board, move):
+    new_board = copy.deepcopy(board)
+    apply_move(new_board, move)
+    return new_board
 
-def update_Q(Q, state, action, reward, next_state, alpha, gamma):
-    pass
+def minimax(board, player_colour, depth):
+    if is_game_over(board) or depth == 0:
+        return state_value(board), None
 
-def get_reward(board, player):
-    pass
+    best_move = None
+
+    if player_colour == 'B':
+        value = -math.inf
+        for move in get_all_moves(board, player_colour):
+            next_value, _ = minimax(result(board, move), 'R', depth-1)
+            if next_value > value:
+                best_move = move
+                value = next_value
+        return value, best_move
+
+    if player_colour == 'R':
+        value = math.inf
+        for move in get_all_moves(board, player_colour):
+            next_value, _ = minimax(result(board, move), 'B', depth-1)
+            if next_value < value:
+                best_move = move
+                value = next_value
+        return value, best_move
+
 
 class App:
     def __init__(self):
@@ -158,7 +190,9 @@ class App:
         clock = pygame.time.Clock()
 
         self.board = init_board()
-        self.player_turn = 'B' # Black starts
+        self.black = Bot('B')
+        self.red = Bot('R')
+        self.player_turn = self.black # Black starts
 
         while self.running:
             self.update()
@@ -177,10 +211,9 @@ class App:
             time.sleep(1)
             self.board = init_board()
         else:
-            move = get_player_move(self.board, self.player_turn)
-            if is_valid_move(self.board, self.player_turn, move):
-                apply_move(self.board, move)
-            self.player_turn = 'R' if self.player_turn == 'B' else 'B'
+            move = self.player_turn.get_move(self.board)
+            apply_move(self.board, move)
+            self.player_turn = self.red if self.player_turn.colour == 'B' else self.black
 
     def draw(self):
         draw_board(self.board, self.screen)
