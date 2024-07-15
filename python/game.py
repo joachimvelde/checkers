@@ -19,6 +19,9 @@ PIECE_VALUE = 3
 KING_VALUE = 2
 CENTER_REWARD = 5
 
+SELECTED_PIECE = None
+SELECTED_MOVES = None
+
 """
 The board is represented as a two-dimensional array with pieces represented as characters,
 and empty tiles as None.
@@ -113,6 +116,40 @@ def get_winner(board):
     return None
 
 
+# - Input functions
+def select_piece(board, colour, row, col):
+    if colour == 'R' and (board[row][col] == 'R' or board[row][col] == 'RK'):
+        global SELECTED_PIECE
+        SELECTED_PIECE = (row, col)
+        global SELECTED_MOVES
+        SELECTED_MOVES = get_moves(board, SELECTED_PIECE)
+
+def select_move(board, row, col):
+    global SELECTED_PIECE
+    global SELECTED_MOVES
+    if SELECTED_MOVES is not None:
+        for (start, end) in SELECTED_MOVES:
+            if end == (row, col):
+                apply_move(board, (start, end))
+                SELECTED_PIECE = None
+                SELECTED_MOVES = None
+                
+
+def mark_tile(surface, tile, colour):
+    row = tile[0]
+    col = tile[1]
+    rect = pygame.Rect(col * TILE_WIDTH, row * TILE_HEIGHT, TILE_WIDTH, TILE_HEIGHT)
+    pygame.draw.rect(surface, colour, rect, 10)
+
+def mark_moves(board, surface):
+    # moves = get_moves(board, SELECTED_PIECE)
+    moves = SELECTED_MOVES
+    colour = pygame.Color(200, 255, 200)
+    mark_tile(surface, SELECTED_PIECE, colour)
+    for (_, to) in moves:
+        mark_tile(surface, to, colour)
+
+
 
 # - Drawing functions -
 def draw_tiles(surface):
@@ -198,7 +235,8 @@ class App:
 
         self.board = init_board()
         self.black = Bot('B')
-        self.red = Bot('R')
+        # self.red = Bot('R')
+        self.red = Player('R')
         self.player_turn = self.black # Black starts
 
         while self.running:
@@ -211,6 +249,17 @@ class App:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
+            if event.type == pygame.MOUSEBUTTONUP:
+                # Find the piece row and column
+                mouse = pygame.mouse.get_pos()
+                col = math.floor(mouse[0] / 100)
+                row = math.floor(mouse[1] / 100)
+
+                # TODO: Try to incorporate into the player class
+                select_piece(self.board, self.player_turn.colour, row, col)
+                select_move(self.board, row, col)
+                if SELECTED_PIECE is None:
+                    self.player_turn = self.black
 
         # Handle each turn
         if is_game_over(self.board):
@@ -219,11 +268,15 @@ class App:
             self.board = init_board()
         else:
             move = self.player_turn.get_move(self.board)
-            apply_move(self.board, move)
-            self.player_turn = self.red if self.player_turn.colour == 'B' else self.black
+            if is_valid_move(self.board, self.player_turn.colour, move):
+                apply_move(self.board, move)
+                self.player_turn = self.red if self.player_turn.colour == 'B' else self.black
+                print("Swapping turns")
 
     def draw(self):
         draw_board(self.board, self.screen)
+        if SELECTED_PIECE is not None:
+            mark_moves(self.board, self.screen)
         pygame.display.flip()
 
 def main():
