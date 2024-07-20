@@ -62,7 +62,7 @@ void update(Piece board[ROWS][COLS])
         Vector2 mouse = GetMousePosition();
         for (size_t r = 0; r < ROWS; r++) {
             for (size_t c = 0; c < COLS; c++) {
-                if (CheckCollisionPointCircle(mouse, board[r][c].pos, PIECE_RADIUS)) {
+                if (board[r][c].type != NONE && CheckCollisionPointCircle(mouse, board[r][c].pos, PIECE_RADIUS)) {
                     printf("Clicked piece at x: %f, y: %f\n", board[r][c].pos.x, board[r][c].pos.y);
                 }
             }
