@@ -54,7 +54,7 @@ impl Board {
         // Create the red pieces
         for row in 5..8 {
             for col in 0..8 {
-                if (row + col) % 2 == 0 {
+                if (row + col) % 2 == 1 {
                     pieces[row * 8 + col] = Some(Piece::new(PieceKind::PAWN, Player::RED));
                 }
             }
