@@ -76,6 +76,10 @@ impl Board {
         self.selected_piece = (row, col);
     }
 
+    fn deselect(&mut self, row: i32, col: i32) {
+        self.selected_piece = (-1, -1);
+    }
+
     fn is_selected(&self) -> bool {
         return self.selected_piece != (-1, -1);
     }
@@ -84,7 +88,17 @@ impl Board {
         return self.selected_piece;
     }
 
-    // TODO: Add methods to execute moves
+    // NOTE: Decide wether to check player turn here as well
+    fn is_move_legal(&self, from: (i32, i32), to: (i32, i32)) -> bool {
+        true
+    }
+
+    fn move_piece(&mut self, from: (i32, i32), to: (i32, i32)) {
+        if !self.is_move_legal(from, to) { return };
+    
+        self.pieces[to.0 as usize* 8 + to.1 as usize] = self.pieces[from.0 as usize * 8 + from.1 as usize];
+        self.pieces[from.0 as usize * 8 + from.1 as usize] = None;
+    }
 }
 
 fn mark_tile(d: &mut RaylibDrawHandle, width: &i32, height: &i32, row: i32, col: i32) {
@@ -107,17 +121,6 @@ fn draw_tiles(d: &mut RaylibDrawHandle, board: &Board, width: &i32, height: &i32
             if board.is_selected() && board.get_selected() == (row, col) {
                 mark_tile(d, width, height, row, col);
             }
-
-            /*
-            match board.at(row, col) {
-                Some(piece) => {
-                    if board.is_selected() && (row, col) == board.get_selected() {
-                        mark_tile(d, width, height, row, col);
-                    }
-                },
-                None => ()
-            }
-            */
         }
     }
 }
@@ -152,18 +155,18 @@ fn draw(mut d: RaylibDrawHandle, board: &Board, width: &i32, height: &i32) {
 }
 
 fn update(rl: &mut RaylibHandle, board: &mut Board, mouse: &Vector2) {
-    // Check for collision with pieces
-    // Find out which tile the user clicked
-    let (row, col) = ((mouse.y / 100.0).floor() as usize, (mouse.x / 100.0).floor() as usize);
+    // Selecting pieces
+    let (row, col) = ((mouse.y / 100.0).floor() as i32, (mouse.x / 100.0).floor() as i32);
 
     if rl.is_mouse_button_pressed(raylib::consts::MouseButton::MOUSE_BUTTON_LEFT) {
-        match board.pieces[row * 8 + col] {
-            Some(piece) => {
-                println!("Clicked a piece belonging to {:?}, at {}, {}", piece.player, row, col);
-                board.select(row as i32, col as i32);
-            },
-            None => println!("Clicked an empty tile at {}, {}", row, col)
+        if !board.at(row, col).is_none() {
+            board.select(row, col);
         }
+    }
+
+    // NOTE: Just for testing. Remove this
+    if rl.is_mouse_button_pressed(raylib::consts::MouseButton::MOUSE_BUTTON_RIGHT) {
+        board.move_piece((0, 1), (0, 0));
     }
 }
 
