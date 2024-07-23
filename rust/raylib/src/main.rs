@@ -76,7 +76,7 @@ impl Board {
         self.selected_piece = (row, col);
     }
 
-    fn deselect(&mut self, row: i32, col: i32) {
+    fn deselect(&mut self) {
         self.selected_piece = (-1, -1);
     }
 
@@ -88,7 +88,16 @@ impl Board {
         return self.selected_piece;
     }
 
-    // NOTE: Decide wether to check player turn here as well
+    fn swap_turns(&mut self) {
+        if self.player_turn == Player::BLACK {
+            self.player_turn = Player::RED
+        } else {
+            self.player_turn = Player::BLACK;
+        }
+
+        self.deselect();
+    }
+
     fn is_move_legal(&self, from: (i32, i32), to: (i32, i32)) -> bool {
         true
     }
