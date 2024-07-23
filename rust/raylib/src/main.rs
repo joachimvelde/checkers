@@ -68,12 +68,12 @@ impl Board {
     }
 
     // TODO: Use this
-    fn at(&self, row: i32, col: i32) -> Option<Piece> {
-        return self.pieces[row as usize * 8 + col as usize];
+    fn at(&self, pos: (i32, i32)) -> Option<Piece> {
+        return self.pieces[pos.0 as usize * 8 + pos.1 as usize];
     }
 
-    fn select(&mut self, row: i32, col: i32) {
-        self.selected_piece = (row, col);
+    fn select(&mut self, pos: (i32, i32)) {
+        self.selected_piece = pos;
     }
 
     fn deselect(&mut self) {
@@ -86,6 +86,10 @@ impl Board {
 
     fn get_selected(&self) -> (i32, i32) {
         return self.selected_piece;
+    }
+
+    fn get_turn(&self) -> Player {
+        return self.player_turn;
     }
 
     fn swap_turns(&mut self) {
@@ -164,19 +168,17 @@ fn draw(mut d: RaylibDrawHandle, board: &Board, width: &i32, height: &i32) {
 }
 
 fn update(rl: &mut RaylibHandle, board: &mut Board, mouse: &Vector2) {
-    // Selecting pieces
     let (row, col) = ((mouse.y / 100.0).floor() as i32, (mouse.x / 100.0).floor() as i32);
 
     if rl.is_mouse_button_pressed(raylib::consts::MouseButton::MOUSE_BUTTON_LEFT) {
-        if !board.at(row, col).is_none() {
-            board.select(row, col);
+        if !board.at((row, col)).is_none() && board.at((row, col)).unwrap().player == board.get_turn() {
+            board.select((row, col));
+        } else if board.is_selected() && board.at(board.get_selected()).unwrap().player == board.player_turn {
+            board.move_piece(board.get_selected(), (row, col));
+            board.swap_turns();
         }
     }
 
-    // NOTE: Just for testing. Remove this
-    if rl.is_mouse_button_pressed(raylib::consts::MouseButton::MOUSE_BUTTON_RIGHT) {
-        board.move_piece((0, 1), (0, 0));
-    }
 }
 
 fn main() {
