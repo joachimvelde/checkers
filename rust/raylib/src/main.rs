@@ -1,11 +1,5 @@
 use raylib::prelude::*;
 
-/*
-Create board so that is is independant on raylib. Create functions that communicate with raylib to call methods on the
-board to update it's state and make moves. For example; draw should not be part of Board, but rather take board as an
-argument and draw it.
-*/
-
 const PIECE_RADIUS: f32 = 30.0;
 
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -26,16 +20,29 @@ struct Piece {
     player: Player
 }
 
-impl Piece {
-    fn new(kind: PieceKind, player: Player) -> Self {
-        Self { kind, player }
-    }
+
+#[derive(Clone, Copy)]
+struct Move {
+    from: (i32, i32),
+    to: (i32, i32)
 }
 
 struct Board {
     pieces: Vec<Option<Piece>>,
     player_turn: Player,
     selected_piece: (i32, i32)
+}
+
+impl Piece {
+    fn new(kind: PieceKind, player: Player) -> Self {
+        Self { kind, player }
+    }
+}
+
+impl Move {
+    fn new(from: (i32, i32), to: (i32, i32)) -> Self {
+        Self { from, to }
+    }
 }
 
 impl Board {
@@ -102,15 +109,35 @@ impl Board {
         self.deselect();
     }
 
-    fn is_move_legal(&self, from: (i32, i32), to: (i32, i32)) -> bool {
-        true
+    fn is_move_legal(&self, m: Move) -> bool {
+        if !self.at(m.from).is_none() && self.at(m.to).is_none() {
+            let piece = self.at(m.from).unwrap();
+            match piece.player {
+                Player::RED => {
+                    if m.to == (m.from.0 - 1, m.from.1 - 1) || m.to == (m.from.0 - 1, m.from.1 + 1) {
+                        return true;
+                    }
+
+                },
+                Player::BLACK => {
+                    if m.to == (m.from.0 + 1, m.from.1 - 1) || m.to == (m.from.0 + 1, m.from.1 + 1) {
+                        return true;
+                    }
+                }
+            }
+            // TODO: Add kings
+        }
+
+        return false;
     }
 
-    fn move_piece(&mut self, from: (i32, i32), to: (i32, i32)) {
-        if !self.is_move_legal(from, to) { return };
-    
-        self.pieces[to.0 as usize* 8 + to.1 as usize] = self.pieces[from.0 as usize * 8 + from.1 as usize];
-        self.pieces[from.0 as usize * 8 + from.1 as usize] = None;
+    fn get_moves(&self, pos: (i32, i32)) -> Vec<Move> {
+        return vec![Move::new((0, 0), (0, 0))];
+    }
+
+    fn move_piece(&mut self, m: Move) {
+        self.pieces[m.to.0 as usize * 8 + m.to.1 as usize] = self.pieces[m.from.0 as usize * 8 + m.from.1 as usize];
+        self.pieces[m.from.0 as usize * 8 + m.from.1 as usize] = None;
     }
 }
 
@@ -144,7 +171,7 @@ fn draw_pieces(d: &mut RaylibDrawHandle, board: &Board, width: &i32, height: &i3
 
     for row in 0..8 {
         for col in 0..8 {
-            match board.pieces[row * 8 + col] {
+            match board.at((row, col)) {
                 Some(piece) => {
                     let x = tile_width / 2 + col as i32 * tile_width;
                     let y = tile_height / 2 + row as i32 * tile_height;
@@ -174,8 +201,11 @@ fn update(rl: &mut RaylibHandle, board: &mut Board, mouse: &Vector2) {
         if !board.at((row, col)).is_none() && board.at((row, col)).unwrap().player == board.get_turn() {
             board.select((row, col));
         } else if board.is_selected() && board.at(board.get_selected()).unwrap().player == board.player_turn {
-            board.move_piece(board.get_selected(), (row, col));
-            board.swap_turns();
+            let m = Move::new(board.get_selected(), (row, col));
+            if board.is_move_legal(m) {
+                board.move_piece(m);
+                board.swap_turns();
+            }
         }
     }
 
