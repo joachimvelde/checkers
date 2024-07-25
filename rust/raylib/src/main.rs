@@ -119,8 +119,8 @@ impl Board {
                         return true;
                     }
                     // Kill check (combine with single check later, separate for logic brain programming)
-                    // TODO: Check that there is an enemy piece between the two tiles
-                    if (m.to == (m.from.0 - 2, m.from.1 - 2) || m.to == (m.from.0 - 2, m.from.1 + 2) {
+                    if (m.to == (m.from.0 - 2, m.from.1 - 2) && !self.at((m.from.0 - 1, m.from.1 - 1)).is_none() && self.at((m.from.0 - 1, m.from.1 - 1)).unwrap().player == Player::BLACK)
+                       || (m.to == (m.from.0 - 2, m.from.1 + 2) && !self.at((m.from.0 - 1, m.from.1 + 1)).is_none() && self.at((m.from.0 - 1, m.from.1 + 1)).unwrap().player == Player::BLACK) {
                         return true;
                     }
                 },
@@ -128,7 +128,8 @@ impl Board {
                     if m.to == (m.from.0 + 1, m.from.1 - 1) || m.to == (m.from.0 + 1, m.from.1 + 1) {
                         return true;
                     }
-                    if m.to == (m.from.0 + 2, m.from.1 - 2) || m.to == (m.from.0 + 2, m.from.1 + 2) {
+                    if (m.to == (m.from.0 + 2, m.from.1 - 2) && !self.at((m.from.0 + 1, m.from.1 - 1)).is_none() && self.at((m.from.0 + 1, m.from.1 - 1)).unwrap().player == Player::RED)
+                       || (m.to == (m.from.0 + 2, m.from.1 + 2) && !self.at((m.from.0 + 1, m.from.1 + 1)).is_none() && self.at((m.from.0 + 1, m.from.1 + 1)).unwrap().player == Player::RED) {
                         return true;
                     }
                 }
@@ -144,8 +145,18 @@ impl Board {
     }
 
     fn move_piece(&mut self, m: Move) {
+        // Move piece
         self.pieces[m.to.0 as usize * 8 + m.to.1 as usize] = self.pieces[m.from.0 as usize * 8 + m.from.1 as usize];
         self.pieces[m.from.0 as usize * 8 + m.from.1 as usize] = None;
+
+        // Execute kill
+        if (m.to.0 - m.from.0).abs() == 2 {
+            let middle: (i32, i32) = (
+                (m.from.0 + m.to.0) / 2,
+                (m.from.1 + m.to.1) / 2
+            );
+            self.pieces[middle.0 as usize * 8 + middle.1 as usize] = None;
+        }
     }
 }
 
