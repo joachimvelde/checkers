@@ -21,7 +21,7 @@ struct Piece {
 }
 
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 struct Move {
     from: (i32, i32),
     to: (i32, i32)
@@ -74,13 +74,17 @@ impl Board {
         }
     }
 
-    // TODO: Use this
     fn at(&self, pos: (i32, i32)) -> Option<Piece> {
+        // assert!(pos.0 >= 0 && pos.1 < 7);
+        if pos.0 < 0 || pos.0 > 7 || pos.1 < 0 || pos.1 > 7 {
+            return None;
+        }
         return self.pieces[pos.0 as usize * 8 + pos.1 as usize];
     }
 
     fn select(&mut self, pos: (i32, i32)) {
         self.selected_piece = pos;
+        println!("{:?}", self.get_legal_moves(pos));
     }
 
     fn deselect(&mut self) {
@@ -110,7 +114,12 @@ impl Board {
     }
 
     fn is_move_legal(&self, m: Move) -> bool {
-        if !self.at(m.from).is_none() && self.at(m.to).is_none() {
+        // Bounds check
+        if (m.from.0 < 0 || m.from.0 > 7) || (m.to.0 < 0 || m.to.1 > 7) {
+            return false;
+        }
+
+        if self.at(m.from).is_some() && self.at(m.to).is_none() {
             let piece = self.at(m.from).unwrap();
             match piece.player {
                 Player::RED => {
@@ -119,8 +128,8 @@ impl Board {
                         return true;
                     }
                     // Kill check (combine with single check later, separate for logic brain programming)
-                    if (m.to == (m.from.0 - 2, m.from.1 - 2) && !self.at((m.from.0 - 1, m.from.1 - 1)).is_none() && self.at((m.from.0 - 1, m.from.1 - 1)).unwrap().player == Player::BLACK)
-                       || (m.to == (m.from.0 - 2, m.from.1 + 2) && !self.at((m.from.0 - 1, m.from.1 + 1)).is_none() && self.at((m.from.0 - 1, m.from.1 + 1)).unwrap().player == Player::BLACK) {
+                    if (m.to == (m.from.0 - 2, m.from.1 - 2) && self.at((m.from.0 - 1, m.from.1 - 1)).is_some() && self.at((m.from.0 - 1, m.from.1 - 1)).unwrap().player == Player::BLACK)
+                       || (m.to == (m.from.0 - 2, m.from.1 + 2) && self.at((m.from.0 - 1, m.from.1 + 1)).is_some() && self.at((m.from.0 - 1, m.from.1 + 1)).unwrap().player == Player::BLACK) {
                         return true;
                     }
                 },
@@ -128,8 +137,8 @@ impl Board {
                     if m.to == (m.from.0 + 1, m.from.1 - 1) || m.to == (m.from.0 + 1, m.from.1 + 1) {
                         return true;
                     }
-                    if (m.to == (m.from.0 + 2, m.from.1 - 2) && !self.at((m.from.0 + 1, m.from.1 - 1)).is_none() && self.at((m.from.0 + 1, m.from.1 - 1)).unwrap().player == Player::RED)
-                       || (m.to == (m.from.0 + 2, m.from.1 + 2) && !self.at((m.from.0 + 1, m.from.1 + 1)).is_none() && self.at((m.from.0 + 1, m.from.1 + 1)).unwrap().player == Player::RED) {
+                    if (m.to == (m.from.0 + 2, m.from.1 - 2) && self.at((m.from.0 + 1, m.from.1 - 1)).is_some() && self.at((m.from.0 + 1, m.from.1 - 1)).unwrap().player == Player::RED)
+                       || (m.to == (m.from.0 + 2, m.from.1 + 2) && self.at((m.from.0 + 1, m.from.1 + 1)).is_some() && self.at((m.from.0 + 1, m.from.1 + 1)).unwrap().player == Player::RED) {
                         return true;
                     }
                 }
@@ -140,8 +149,22 @@ impl Board {
         return false;
     }
 
-    fn get_moves(&self, pos: (i32, i32)) -> Vec<Move> {
-        return vec![Move::new((0, 0), (0, 0))];
+    fn get_legal_moves(&self, pos: (i32, i32)) -> Vec<Move> {
+        assert!(self.at(pos).is_some());
+
+        let mut moves: Vec<Move> = Vec::with_capacity(8);
+        moves.push(Move::new(pos, (pos.0 + 1, pos.1 + 1)));
+        moves.push(Move::new(pos, (pos.0 + 1, pos.1 - 1)));
+        moves.push(Move::new(pos, (pos.0 - 1, pos.1 + 1)));
+        moves.push(Move::new(pos, (pos.0 - 1, pos.1 - 1)));
+        moves.push(Move::new(pos, (pos.0 + 2, pos.1 + 2)));
+        moves.push(Move::new(pos, (pos.0 + 2, pos.1 - 2)));
+        moves.push(Move::new(pos, (pos.0 - 2, pos.1 + 2)));
+        moves.push(Move::new(pos, (pos.0 - 2, pos.1 - 2)));
+
+        moves.retain(|&m| self.is_move_legal(m));
+
+        return moves;
     }
 
     fn move_piece(&mut self, m: Move) {
@@ -179,6 +202,11 @@ fn draw_tiles(d: &mut RaylibDrawHandle, board: &Board, width: &i32, height: &i32
 
             if board.is_selected() && board.get_selected() == (row, col) {
                 mark_tile(d, width, height, row, col);
+
+                for m in board.get_legal_moves(board.get_selected()) {
+                    println!("Marking to {:?}", m);
+                    mark_tile(d, width, height, m.to.0, m.to.1);
+                }
             }
         }
     }
@@ -217,7 +245,7 @@ fn update(rl: &mut RaylibHandle, board: &mut Board, mouse: &Vector2) {
     let (row, col) = ((mouse.y / 100.0).floor() as i32, (mouse.x / 100.0).floor() as i32);
 
     if rl.is_mouse_button_pressed(raylib::consts::MouseButton::MOUSE_BUTTON_LEFT) {
-        if !board.at((row, col)).is_none() && board.at((row, col)).unwrap().player == board.get_turn() {
+        if board.at((row, col)).is_some() && board.at((row, col)).unwrap().player == board.get_turn() {
             board.select((row, col));
         } else if board.is_selected() && board.at(board.get_selected()).unwrap().player == board.player_turn {
             let m = Move::new(board.get_selected(), (row, col));
@@ -227,7 +255,6 @@ fn update(rl: &mut RaylibHandle, board: &mut Board, mouse: &Vector2) {
             }
         }
     }
-
 }
 
 fn main() {
