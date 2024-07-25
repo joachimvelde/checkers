@@ -114,13 +114,21 @@ impl Board {
             let piece = self.at(m.from).unwrap();
             match piece.player {
                 Player::RED => {
+                    // Single tile checks
                     if m.to == (m.from.0 - 1, m.from.1 - 1) || m.to == (m.from.0 - 1, m.from.1 + 1) {
                         return true;
                     }
-
+                    // Kill check (combine with single check later, separate for logic brain programming)
+                    // TODO: Check that there is an enemy piece between the two tiles
+                    if (m.to == (m.from.0 - 2, m.from.1 - 2) || m.to == (m.from.0 - 2, m.from.1 + 2) {
+                        return true;
+                    }
                 },
                 Player::BLACK => {
                     if m.to == (m.from.0 + 1, m.from.1 - 1) || m.to == (m.from.0 + 1, m.from.1 + 1) {
+                        return true;
+                    }
+                    if m.to == (m.from.0 + 2, m.from.1 - 2) || m.to == (m.from.0 + 2, m.from.1 + 2) {
                         return true;
                     }
                 }
