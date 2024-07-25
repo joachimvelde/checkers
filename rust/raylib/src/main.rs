@@ -195,16 +195,21 @@ fn draw_tiles(d: &mut RaylibDrawHandle, board: &Board, width: &i32, height: &i32
     let tile_width = width / 8;
     let tile_height = height / 8;
 
+    // Draw the black and white tiles
     for row in 0..8 {
         for col in 0..8 {
             let colour = if (row + col) % 2 == 0 { Color::WHITE } else { Color::BLACK };
             d.draw_rectangle(col * tile_width, row * tile_height, tile_width, tile_height, colour);
+        }
+    }
 
+    // Mark the correct tiles
+    for row in 0..8 {
+        for col in 0..8 {
             if board.is_selected() && board.get_selected() == (row, col) {
                 mark_tile(d, width, height, row, col);
 
                 for m in board.get_legal_moves(board.get_selected()) {
-                    println!("Marking to {:?}", m);
                     mark_tile(d, width, height, m.to.0, m.to.1);
                 }
             }
