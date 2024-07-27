@@ -84,7 +84,6 @@ impl Board {
 
     fn select(&mut self, pos: (i32, i32)) {
         self.selected_piece = pos;
-        println!("{:?}", self.get_legal_moves(pos));
     }
 
     fn deselect(&mut self) {
@@ -111,6 +110,31 @@ impl Board {
         }
 
         self.deselect();
+    }
+
+    fn make_kings(&mut self) {
+        for row in 0..8 {
+            for col in 0..8 {
+                let opt = self.at((row, col));
+                if opt.is_some() {
+                    let piece = opt.unwrap(); 
+                    if piece.kind == PieceKind::PAWN {
+                        if piece.player == Player::RED && row == 0 {
+                            self.make_king((row, col));
+                        }
+                        if piece.player == Player::BLACK && row == 7 {
+                            self.make_king((row, col));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    fn make_king(&mut self, pos: (i32, i32)) {
+        // TODO: Maybe add some checks
+        let pawn = self.pieces[pos.0 as usize * 8 + pos.1 as usize].unwrap();
+        self.pieces[pos.0 as usize * 8 + pos.1 as usize] = Some(Piece::new(PieceKind::KING, pawn.player));
     }
 
     fn is_move_legal(&self, m: Move) -> bool {
@@ -230,9 +254,17 @@ fn draw_pieces(d: &mut RaylibDrawHandle, board: &Board, width: &i32, height: &i3
 
                     match (piece.kind, piece.player) {
                         (PieceKind::PAWN, Player::RED) => d.draw_circle(x, y, PIECE_RADIUS, Color::RED),
-                        (PieceKind::KING, Player::RED) => println!("Draw a red king!"),
+                        (PieceKind::KING, Player::RED) => {
+                            d.draw_circle(x, y, PIECE_RADIUS, Color::RED);
+                            // d.draw_circle_lines(x, y, PIECE_RADIUS, Color::GOLD);
+                            d.draw_circle(x, y, PIECE_RADIUS / 5.0, Color::GOLD);
+                        },
                         (PieceKind::PAWN, Player::BLACK) => d.draw_circle(x, y, PIECE_RADIUS, Color::GRAY),
-                        (PieceKind::KING, Player::BLACK) => println!("Draw a black king!")
+                        (PieceKind::KING, Player::BLACK) => {
+                            d.draw_circle(x, y, PIECE_RADIUS, Color::GRAY);
+                            // d.draw_circle_lines(x, y, PIECE_RADIUS, Color::GOLD);
+                            d.draw_circle(x, y, PIECE_RADIUS / 5.0, Color::GOLD);
+                        }
                     }
                 },
                 None => ()
@@ -256,6 +288,7 @@ fn update(rl: &mut RaylibHandle, board: &mut Board, mouse: &Vector2) {
             let m = Move::new(board.get_selected(), (row, col));
             if board.is_move_legal(m) {
                 board.move_piece(m);
+                board.make_kings();
                 board.swap_turns();
             }
         }
