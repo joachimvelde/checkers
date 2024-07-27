@@ -204,6 +204,10 @@ impl Board {
             );
             self.pieces[middle.0 as usize * 8 + middle.1 as usize] = None;
         }
+
+        // TODO: Scrap this function and just place the logic here so we dont have to check every
+        // single piece on the board.
+        self.make_kings();
     }
 }
 
@@ -288,7 +292,6 @@ fn update(rl: &mut RaylibHandle, board: &mut Board, mouse: &Vector2) {
             let m = Move::new(board.get_selected(), (row, col));
             if board.is_move_legal(m) {
                 board.move_piece(m);
-                board.make_kings();
                 board.swap_turns();
             }
         }
