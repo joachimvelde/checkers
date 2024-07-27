@@ -30,7 +30,8 @@ struct Move {
 struct Board {
     pieces: Vec<Option<Piece>>,
     player_turn: Player,
-    selected_piece: (i32, i32)
+    selected_piece: (i32, i32),
+    successive_piece: (i32, i32)
 }
 
 impl Piece {
@@ -70,7 +71,8 @@ impl Board {
         Self {
             pieces: pieces,
             player_turn: Player::BLACK,
-            selected_piece: (-1, -1)
+            selected_piece: (-1, -1),
+            successive_piece: (-1, -1)
         }
     }
 
@@ -96,6 +98,79 @@ impl Board {
 
     fn get_selected(&self) -> (i32, i32) {
         return self.selected_piece;
+    }
+
+    fn set_successive(&mut self, pos: (i32, i32)) {
+        self.successive_piece = pos;
+    }
+
+    fn unset_successive(&mut self) {
+        self.successive_piece = (-1, -1);
+    }
+
+    fn is_successive(&self) -> bool {
+        return self.successive_piece != (-1, -1);
+    }
+
+    fn get_successive(&self)-> (i32, i32) {
+        return self.successive_piece;
+    }
+
+    // TODO: Use these more
+    fn in_bounds(&self, pos: (i32, i32)) -> bool {
+        return pos.0 >= 0 && pos.0 <= 7 && pos.1 >= 0 && pos.1 <= 7;
+    }
+
+    fn is_empty(&self, pos: (i32, i32)) -> bool {
+        return self.at(pos).is_none();
+    }
+
+    fn is_enemy_of(&self, pos: (i32, i32), player: Player) -> bool {
+        return self.at(pos).is_some() && self.at(pos).unwrap().player != player;
+    }
+
+    fn is_kill_available(&self, pos: (i32, i32)) -> bool {
+        if self.at(pos).is_none() {
+            return false;
+        }
+
+        let piece = self.at(pos).unwrap();
+        match (piece.kind, piece.player) {
+            (PieceKind::PAWN, Player::RED) => {
+                let target1 = (pos.0 - 2, pos.1 - 2);
+                let enemy1 = (pos.0 - 1, pos.1 - 1);
+
+                let target2 = (pos.0 - 2, pos.1 + 2);
+                let enemy2 = (pos.0 - 1, pos.1 - 1);
+
+                if self.in_bounds(target1) && self.is_empty(target1) && self.is_enemy_of(enemy1, Player::RED) {
+                    return true;
+                }
+
+                if self.in_bounds(target2) && self.is_empty(target2) && self.is_enemy_of(enemy2, Player::RED) {
+                    return true;
+                }
+            },
+            (PieceKind::PAWN, Player::BLACK) => {
+                let target1 = (pos.0 + 2, pos.1 - 2);
+                let enemy1 = (pos.0 + 1, pos.1 - 1);
+
+                let target2 = (pos.0 + 2, pos.1 + 2);
+                let enemy2 = (pos.0 + 1, pos.1 - 1);
+
+                if self.in_bounds(target1) && self.is_empty(target1) && self.is_enemy_of(enemy1, Player::BLACK) {
+                    return true;
+                }
+
+                if self.in_bounds(target2) && self.is_empty(target2) && self.is_enemy_of(enemy2, Player::BLACK) {
+                    return true;
+                }
+            },
+            // TODO: Replace with logic for kings
+            default => ()
+        }
+
+        return false;
     }
 
     fn get_turn(&self) -> Player {
@@ -143,6 +218,7 @@ impl Board {
             return false;
         }
 
+        // NOTE: Can this be replaces with is_kill_available()?
         if self.at(m.from).is_some() && self.at(m.to).is_none() {
             let piece = self.at(m.from).unwrap();
             match (piece.kind, piece.player) {
@@ -224,6 +300,17 @@ impl Board {
                 (m.from.1 + m.to.1) / 2
             );
             self.pieces[middle.0 as usize * 8 + middle.1 as usize] = None;
+
+            // Multi-kill moves
+            if self.is_kill_available(m.to) {
+                self.set_successive(m.to);
+            } else {
+                self.unset_successive();
+                self.swap_turns();
+            }
+        } else {
+            self.unset_successive();
+            self.swap_turns();
         }
 
         // TODO: Scrap this function and just place the logic here so we dont have to check every
@@ -312,8 +399,8 @@ fn update(rl: &mut RaylibHandle, board: &mut Board, mouse: &Vector2) {
         } else if board.is_selected() && board.at(board.get_selected()).unwrap().player == board.player_turn {
             let m = Move::new(board.get_selected(), (row, col));
             if board.is_move_legal(m) {
+                board.deselect();
                 board.move_piece(m);
-                board.swap_turns();
             }
         }
     }
