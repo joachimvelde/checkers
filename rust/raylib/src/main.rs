@@ -145,19 +145,19 @@ impl Board {
 
         if self.at(m.from).is_some() && self.at(m.to).is_none() {
             let piece = self.at(m.from).unwrap();
-            match piece.player {
-                Player::RED => {
+            match (piece.kind, piece.player) {
+                (PieceKind::PAWN, Player::RED) => {
                     // Single tile checks
                     if m.to == (m.from.0 - 1, m.from.1 - 1) || m.to == (m.from.0 - 1, m.from.1 + 1) {
                         return true;
                     }
-                    // Kill check (combine with single check later, separate for logic brain programming)
+                    // Kill check
                     if (m.to == (m.from.0 - 2, m.from.1 - 2) && self.at((m.from.0 - 1, m.from.1 - 1)).is_some() && self.at((m.from.0 - 1, m.from.1 - 1)).unwrap().player == Player::BLACK)
                        || (m.to == (m.from.0 - 2, m.from.1 + 2) && self.at((m.from.0 - 1, m.from.1 + 1)).is_some() && self.at((m.from.0 - 1, m.from.1 + 1)).unwrap().player == Player::BLACK) {
                         return true;
                     }
                 },
-                Player::BLACK => {
+                (PieceKind::PAWN, Player::BLACK) => {
                     if m.to == (m.from.0 + 1, m.from.1 - 1) || m.to == (m.from.0 + 1, m.from.1 + 1) {
                         return true;
                     }
@@ -165,9 +165,30 @@ impl Board {
                        || (m.to == (m.from.0 + 2, m.from.1 + 2) && self.at((m.from.0 + 1, m.from.1 + 1)).is_some() && self.at((m.from.0 + 1, m.from.1 + 1)).unwrap().player == Player::RED) {
                         return true;
                     }
+                },
+                (PieceKind::KING, Player::RED) => {
+                    if m.to == (m.from.0 - 1, m.from.1 - 1) || m.to == (m.from.0 - 1, m.from.1 + 1) || m.to == (m.from.0 + 1, m.from.1 - 1) || m.to == (m.from.0 + 1, m.from.1 + 1) {
+                        return true;
+                    }
+                    if (m.to == (m.from.0 - 2, m.from.1 - 2) && self.at((m.from.0 - 1, m.from.1 - 1)).is_some() && self.at((m.from.0 - 1, m.from.1 - 1)).unwrap().player == Player::BLACK)
+                        || (m.to == (m.from.0 - 2, m.from.1 + 2) && self.at((m.from.0 - 1, m.from.1 + 1)).is_some() && self.at((m.from.0 - 1, m.from.1 + 1)).unwrap().player == Player::BLACK)
+                        || (m.to == (m.from.0 + 2, m.from.1 - 2) && self.at((m.from.0 + 1, m.from.1 - 1)).is_some() && self.at((m.from.0 + 1, m.from.1 - 1)).unwrap().player == Player::BLACK)
+                        || (m.to == (m.from.0 + 2, m.from.1 + 2) && self.at((m.from.0 + 1, m.from.1 + 1)).is_some() && self.at((m.from.0 + 1, m.from.1 + 1)).unwrap().player == Player::BLACK) {
+                            return true;
+                    }
+                },
+                (PieceKind::KING, Player::BLACK) => {
+                    if m.to == (m.from.0 - 1, m.from.1 - 1) || m.to == (m.from.0 - 1, m.from.1 + 1) || m.to == (m.from.0 + 1, m.from.1 - 1) || m.to == (m.from.0 + 1, m.from.1 + 1) {
+                        return true;
+                    }
+                    if (m.to == (m.from.0 - 2, m.from.1 - 2) && self.at((m.from.0 - 1, m.from.1 - 1)).is_some() && self.at((m.from.0 - 1, m.from.1 - 1)).unwrap().player == Player::RED)
+                        || (m.to == (m.from.0 - 2, m.from.1 + 2) && self.at((m.from.0 - 1, m.from.1 + 1)).is_some() && self.at((m.from.0 - 1, m.from.1 + 1)).unwrap().player == Player::RED)
+                        || (m.to == (m.from.0 + 2, m.from.1 - 2) && self.at((m.from.0 + 1, m.from.1 - 1)).is_some() && self.at((m.from.0 + 1, m.from.1 - 1)).unwrap().player == Player::RED)
+                        || (m.to == (m.from.0 + 2, m.from.1 + 2) && self.at((m.from.0 + 1, m.from.1 + 1)).is_some() && self.at((m.from.0 + 1, m.from.1 + 1)).unwrap().player == Player::RED) {
+                            return true;
+                    }
                 }
             }
-            // TODO: Add kings
         }
 
         return false;
