@@ -138,7 +138,7 @@ impl Board {
         match (piece.kind, piece.player) {
             (PieceKind::PAWN, Player::RED) => {
                 let target1 = (pos.0 - 2, pos.1 - 2);
-                let enemy1 = (pos.0 - 1, pos.1 - 1);
+                let enemy1 = (pos.0 - 1, pos.1 + 1);
 
                 let target2 = (pos.0 - 2, pos.1 + 2);
                 let enemy2 = (pos.0 - 1, pos.1 - 1);
@@ -153,7 +153,7 @@ impl Board {
             },
             (PieceKind::PAWN, Player::BLACK) => {
                 let target1 = (pos.0 + 2, pos.1 - 2);
-                let enemy1 = (pos.0 + 1, pos.1 - 1);
+                let enemy1 = (pos.0 + 1, pos.1 + 1);
 
                 let target2 = (pos.0 + 2, pos.1 + 2);
                 let enemy2 = (pos.0 + 1, pos.1 - 1);
