@@ -20,7 +20,6 @@ struct Piece {
     player: Player
 }
 
-
 #[derive(Clone, Copy, Debug)]
 struct Move {
     from: (i32, i32),
@@ -167,7 +166,7 @@ impl Board {
                 }
             },
             // TODO: Replace with logic for kings
-            default => ()
+            _default => ()
         }
 
         return false;
@@ -185,25 +184,6 @@ impl Board {
         }
 
         self.deselect();
-    }
-
-    fn make_kings(&mut self) {
-        for row in 0..8 {
-            for col in 0..8 {
-                let opt = self.at((row, col));
-                if opt.is_some() {
-                    let piece = opt.unwrap(); 
-                    if piece.kind == PieceKind::PAWN {
-                        if piece.player == Player::RED && row == 0 {
-                            self.make_king((row, col));
-                        }
-                        if piece.player == Player::BLACK && row == 7 {
-                            self.make_king((row, col));
-                        }
-                    }
-                }
-            }
-        }
     }
 
     fn make_king(&mut self, pos: (i32, i32)) {
@@ -313,9 +293,11 @@ impl Board {
             self.swap_turns();
         }
 
-        // TODO: Scrap this function and just place the logic here so we dont have to check every
-        // single piece on the board.
-        self.make_kings();
+        let piece = self.at(m.to).unwrap();
+        match (m.to.0, piece.kind, piece.player) {
+            (0, PieceKind::PAWN, Player::RED) | (7, PieceKind::PAWN, Player::BLACK) => self.make_king(m.to),
+            _default => ()
+        }
     }
 }
 
@@ -323,7 +305,7 @@ fn mark_tile(d: &mut RaylibDrawHandle, width: &i32, height: &i32, row: i32, col:
     let tile_width = width / 8;
     let tile_height = height / 8;
 
-    let rect = Rectangle::new(col as f32* tile_width as f32, row as f32* tile_height as f32, tile_width as f32, tile_height as f32);
+    let rect = Rectangle::new(col as f32 * tile_width as f32, row as f32 * tile_height as f32, tile_width as f32, tile_height as f32);
     d.draw_rectangle_lines_ex(rect, 7.5, Color::LIME);
 }
 
@@ -388,6 +370,10 @@ fn draw_pieces(d: &mut RaylibDrawHandle, board: &Board, width: &i32, height: &i3
 fn draw(mut d: RaylibDrawHandle, board: &Board, width: &i32, height: &i32) {
     draw_tiles(&mut d, board, width, height);
     draw_pieces(&mut d, board, width, height);
+
+    let rect = Rectangle::new(0.0, 0.0, *width as f32, *height as f32);
+    let colour = if board.player_turn == Player::RED { Color::RED } else { Color::BLACK };
+    d.draw_rectangle_lines_ex(rect, 3.0, colour);
 }
 
 fn update(rl: &mut RaylibHandle, board: &mut Board, mouse: &Vector2) {
