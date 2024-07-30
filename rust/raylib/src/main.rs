@@ -75,6 +75,10 @@ impl Board {
         }
     }
 
+    fn reset(&mut self) {
+        *self = Board::new();
+    }
+
     fn at(&self, pos: (i32, i32)) -> Option<Piece> {
         // assert!(pos.0 >= 0 && pos.1 < 7);
         if pos.0 < 0 || pos.0 > 7 || pos.1 < 0 || pos.1 > 7 {
@@ -184,6 +188,21 @@ impl Board {
         }
 
         self.deselect();
+    }
+
+    fn is_game_over(&self) -> bool {
+        let mut pieces = 0;
+
+        for row in 0..8 {
+            for col in 0..8 {
+                let piece = self.at((row, col));
+                if piece.is_some() {
+                    pieces += 1;
+                }
+            }
+        }
+
+        return pieces == 1;
     }
 
     fn make_king(&mut self, pos: (i32, i32)) {
@@ -388,6 +407,10 @@ fn update(rl: &mut RaylibHandle, board: &mut Board, mouse: &Vector2) {
                 board.deselect();
                 board.move_piece(m);
             }
+        }
+
+        if board.is_game_over() {
+            board.reset();
         }
     }
 }
