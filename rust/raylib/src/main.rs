@@ -191,18 +191,22 @@ impl Board {
     }
 
     fn is_game_over(&self) -> bool {
-        let mut pieces = 0;
+        let mut reds = 0;
+        let mut blacks = 0;
 
         for row in 0..8 {
             for col in 0..8 {
                 let piece = self.at((row, col));
                 if piece.is_some() {
-                    pieces += 1;
+                    match piece.unwrap().player {
+                        Player::RED => reds += 1,
+                        Player::BLACK => blacks += 1
+                    }
                 }
             }
         }
 
-        return pieces == 1;
+        return reds == 0 || blacks == 0;
     }
 
     fn make_king(&mut self, pos: (i32, i32)) {
