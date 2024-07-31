@@ -80,11 +80,10 @@ impl Board {
     }
 
     fn at(&self, pos: (i32, i32)) -> Option<Piece> {
-        // assert!(pos.0 >= 0 && pos.1 < 7);
-        if pos.0 < 0 || pos.0 > 7 || pos.1 < 0 || pos.1 > 7 {
-            return None;
+        if self.in_bounds(pos) {
+            return self.pieces[pos.0 as usize * 8 + pos.1 as usize];
         }
-        return self.pieces[pos.0 as usize * 8 + pos.1 as usize];
+        return None;
     }
 
     fn select(&mut self, pos: (i32, i32)) {
@@ -215,64 +214,52 @@ impl Board {
         self.pieces[pos.0 as usize * 8 + pos.1 as usize] = Some(Piece::new(PieceKind::KING, pawn.player));
     }
 
-    fn is_move_legal(&self, m: Move) -> bool {
-        // Bounds check
-        if (m.from.0 < 0 || m.from.0 > 7) || (m.to.0 < 0 || m.to.1 > 7) {
+    fn is_move_legal_pawn(&self, m: Move, player: Player) -> bool {
+        if !self.in_bounds(m.from) || !self.in_bounds(m.to) || self.at(m.from).is_none() || self.at(m.to).is_some() {
             return false;
         }
 
-        // NOTE: Can this be replaces with is_kill_available()?
-        if self.at(m.from).is_some() && self.at(m.to).is_none() {
-            let piece = self.at(m.from).unwrap();
-            match (piece.kind, piece.player) {
-                (PieceKind::PAWN, Player::RED) => {
-                    // Single tile checks
-                    if m.to == (m.from.0 - 1, m.from.1 - 1) || m.to == (m.from.0 - 1, m.from.1 + 1) {
-                        return true;
-                    }
-                    // Kill check
-                    if (m.to == (m.from.0 - 2, m.from.1 - 2) && self.at((m.from.0 - 1, m.from.1 - 1)).is_some() && self.at((m.from.0 - 1, m.from.1 - 1)).unwrap().player == Player::BLACK)
-                       || (m.to == (m.from.0 - 2, m.from.1 + 2) && self.at((m.from.0 - 1, m.from.1 + 1)).is_some() && self.at((m.from.0 - 1, m.from.1 + 1)).unwrap().player == Player::BLACK) {
-                        return true;
-                    }
-                },
-                (PieceKind::PAWN, Player::BLACK) => {
-                    if m.to == (m.from.0 + 1, m.from.1 - 1) || m.to == (m.from.0 + 1, m.from.1 + 1) {
-                        return true;
-                    }
-                    if (m.to == (m.from.0 + 2, m.from.1 - 2) && self.at((m.from.0 + 1, m.from.1 - 1)).is_some() && self.at((m.from.0 + 1, m.from.1 - 1)).unwrap().player == Player::RED)
-                       || (m.to == (m.from.0 + 2, m.from.1 + 2) && self.at((m.from.0 + 1, m.from.1 + 1)).is_some() && self.at((m.from.0 + 1, m.from.1 + 1)).unwrap().player == Player::RED) {
-                        return true;
-                    }
-                },
-                (PieceKind::KING, Player::RED) => {
-                    if m.to == (m.from.0 - 1, m.from.1 - 1) || m.to == (m.from.0 - 1, m.from.1 + 1) || m.to == (m.from.0 + 1, m.from.1 - 1) || m.to == (m.from.0 + 1, m.from.1 + 1) {
-                        return true;
-                    }
-                    if (m.to == (m.from.0 - 2, m.from.1 - 2) && self.at((m.from.0 - 1, m.from.1 - 1)).is_some() && self.at((m.from.0 - 1, m.from.1 - 1)).unwrap().player == Player::BLACK)
-                        || (m.to == (m.from.0 - 2, m.from.1 + 2) && self.at((m.from.0 - 1, m.from.1 + 1)).is_some() && self.at((m.from.0 - 1, m.from.1 + 1)).unwrap().player == Player::BLACK)
-                        || (m.to == (m.from.0 + 2, m.from.1 - 2) && self.at((m.from.0 + 1, m.from.1 - 1)).is_some() && self.at((m.from.0 + 1, m.from.1 - 1)).unwrap().player == Player::BLACK)
-                        || (m.to == (m.from.0 + 2, m.from.1 + 2) && self.at((m.from.0 + 1, m.from.1 + 1)).is_some() && self.at((m.from.0 + 1, m.from.1 + 1)).unwrap().player == Player::BLACK) {
-                            return true;
-                    }
-                },
-                (PieceKind::KING, Player::BLACK) => {
-                    if m.to == (m.from.0 - 1, m.from.1 - 1) || m.to == (m.from.0 - 1, m.from.1 + 1) || m.to == (m.from.0 + 1, m.from.1 - 1) || m.to == (m.from.0 + 1, m.from.1 + 1) {
-                        return true;
-                    }
-                    if (m.to == (m.from.0 - 2, m.from.1 - 2) && self.at((m.from.0 - 1, m.from.1 - 1)).is_some() && self.at((m.from.0 - 1, m.from.1 - 1)).unwrap().player == Player::RED)
-                        || (m.to == (m.from.0 - 2, m.from.1 + 2) && self.at((m.from.0 - 1, m.from.1 + 1)).is_some() && self.at((m.from.0 - 1, m.from.1 + 1)).unwrap().player == Player::RED)
-                        || (m.to == (m.from.0 + 2, m.from.1 - 2) && self.at((m.from.0 + 1, m.from.1 - 1)).is_some() && self.at((m.from.0 + 1, m.from.1 - 1)).unwrap().player == Player::RED)
-                        || (m.to == (m.from.0 + 2, m.from.1 + 2) && self.at((m.from.0 + 1, m.from.1 + 1)).is_some() && self.at((m.from.0 + 1, m.from.1 + 1)).unwrap().player == Player::RED) {
-                            return true;
-                    }
-                }
-            }
+        let dir = match player {
+            Player::RED => -1,
+            Player::BLACK => 1
+        };
+
+        // Normal moves
+        if m.to == (m.from.0 + dir, m.from.1 - 1) || m.to == (m.from.0 + dir, m.from.1 + 1) {
+            return true;
+        }
+
+        // Kills
+        if (m.to == (m.from.0 + 2 * dir, m.from.1 + 2) && self.at((m.from.0 + dir, m.from.1 + 1)).map_or(false, |piece| piece.player != player))
+            || (m.to == (m.from.0 + 2 * dir, m.from.1 - 2) && self.at((m.from.0 + dir, m.from.1 - 1)).map_or(false, |piece| piece.player != player))
+        {
+            return true;
         }
 
         return false;
     }
 
+    fn is_move_legal_king(&self, m: Move, player: Player) -> bool {
+        if !self.in_bounds(m.from) || !self.in_bounds(m.to) || self.at(m.from).is_none() || self.at(m.to).is_some() {
+            return false;
+        }
+
+        return true;
+    }
+
+    fn is_move_legal(&self, m: Move) -> bool {
+        if !self.in_bounds(m.from) || !self.in_bounds(m.to) || self.at(m.from).is_none() || self.at(m.to).is_some() {
+            return false;
+        }
+
+        let piece = self.at(m.from).unwrap();
+        match piece.kind {
+            PieceKind::PAWN => return self.is_move_legal_pawn(m, piece.player),
+            PieceKind::KING => return self.is_move_legal_king(m, piece.player)
+        }
+    }
+
+    // TODO: If a kill is available, non-kill moves cannot be executed
     fn get_legal_moves(&self, pos: (i32, i32)) -> Vec<Move> {
         assert!(self.at(pos).is_some());
 
