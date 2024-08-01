@@ -118,7 +118,6 @@ impl Board {
         return self.successive_piece;
     }
 
-    // TODO: Use these more
     fn in_bounds(&self, pos: (i32, i32)) -> bool {
         return pos.0 >= 0 && pos.0 <= 7 && pos.1 >= 0 && pos.1 <= 7;
     }
@@ -133,43 +132,35 @@ impl Board {
 
     fn is_kill_available(&self, pos: (i32, i32)) -> bool {
         if self.at(pos).is_none() {
-            return false;
+            return true;
         }
 
         let piece = self.at(pos).unwrap();
-        match (piece.kind, piece.player) {
-            (PieceKind::PAWN, Player::RED) => {
-                let target1 = (pos.0 - 2, pos.1 - 2);
-                let enemy1 = (pos.0 - 1, pos.1 - 1);
+        let player = piece.player;
 
-                let target2 = (pos.0 - 2, pos.1 + 2);
-                let enemy2 = (pos.0 - 1, pos.1 + 1);
-
-                if self.in_bounds(target1) && self.is_empty(target1) && self.is_enemy_of(enemy1, Player::RED) {
-                    return true;
-                }
-
-                if self.in_bounds(target2) && self.is_empty(target2) && self.is_enemy_of(enemy2, Player::RED) {
-                    return true;
-                }
+        let kill_moves = match piece.kind {
+            PieceKind::PAWN => match player {
+                Player::RED => vec![
+                    (pos.0 - 2, pos.1 - 2, pos.0 - 1, pos.1 - 1),
+                    (pos.0 - 2, pos.1 + 2, pos.0 - 1, pos.1 + 1)
+                ],
+                Player::BLACK => vec![
+                    (pos.0 + 2, pos.1 - 2, pos.0 + 1, pos.1 - 1),
+                    (pos.0 + 2, pos.1 + 2, pos.0 + 1, pos.1 + 1)
+                ]
             },
-            (PieceKind::PAWN, Player::BLACK) => {
-                let target1 = (pos.0 + 2, pos.1 - 2);
-                let enemy1 = (pos.0 + 1, pos.1 - 1);
+            PieceKind::KING => vec![
+                (pos.0 - 2, pos.1 - 2, pos.0 - 1, pos.1 - 1),
+                (pos.0 - 2, pos.1 + 2, pos.0 - 1, pos.1 + 1),
+                (pos.0 + 2, pos.1 - 2, pos.0 + 1, pos.1 - 1),
+                (pos.0 + 2, pos.1 + 2, pos.0 + 1, pos.1 + 1)
+            ]
+        };
 
-                let target2 = (pos.0 + 2, pos.1 + 2);
-                let enemy2 = (pos.0 + 1, pos.1 + 1);
-
-                if self.in_bounds(target1) && self.is_empty(target1) && self.is_enemy_of(enemy1, Player::BLACK) {
-                    return true;
-                }
-
-                if self.in_bounds(target2) && self.is_empty(target2) && self.is_enemy_of(enemy2, Player::BLACK) {
-                    return true;
-                }
-            },
-            // TODO: Replace with logic for kings
-            _default => ()
+        for &(x_to, y_to, x_mid, y_mid) in &kill_moves {
+            if self.in_bounds((x_to, y_to)) && self.is_empty((x_to, y_to)) && self.is_enemy_of((x_mid, y_mid), player) {
+                return true;
+            }
         }
 
         return false;
@@ -209,7 +200,6 @@ impl Board {
     }
 
     fn make_king(&mut self, pos: (i32, i32)) {
-        // TODO: Maybe add some checks
         let pawn = self.pieces[pos.0 as usize * 8 + pos.1 as usize].unwrap();
         self.pieces[pos.0 as usize * 8 + pos.1 as usize] = Some(Piece::new(PieceKind::KING, pawn.player));
     }
