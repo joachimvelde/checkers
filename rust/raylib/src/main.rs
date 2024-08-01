@@ -20,7 +20,7 @@ struct Piece {
     player: Player
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 struct Move {
     from: (i32, i32),
     to: (i32, i32)
@@ -276,23 +276,53 @@ impl Board {
         }
     }
 
-    // TODO: If a kill is available, non-kill moves cannot be executed
+    fn is_kill_move(&self, m: &Move, player: Player) -> bool {
+        if !self.in_bounds(m.to) {
+            return false;
+        }
+
+        let dx = (m.to.0 - m.from.0).abs();
+        let dy = (m.to.1 - m.from.1).abs();
+
+        if dx == 2 && dy == 2 && self.is_empty(m.to) {
+            let mx = (m.from.0 + m.to.0) / 2;
+            let my = (m.from.1 + m.to.1) / 2;
+
+
+            if let Some(piece) = self.at((mx, my)) {
+                return piece.player != player;
+            }
+        }
+
+        return false;
+    }
+
     fn get_legal_moves(&self, pos: (i32, i32)) -> Vec<Move> {
         assert!(self.at(pos).is_some());
 
-        let mut moves: Vec<Move> = Vec::with_capacity(8);
-        moves.push(Move::new(pos, (pos.0 + 1, pos.1 + 1)));
-        moves.push(Move::new(pos, (pos.0 + 1, pos.1 - 1)));
-        moves.push(Move::new(pos, (pos.0 - 1, pos.1 + 1)));
-        moves.push(Move::new(pos, (pos.0 - 1, pos.1 - 1)));
-        moves.push(Move::new(pos, (pos.0 + 2, pos.1 + 2)));
-        moves.push(Move::new(pos, (pos.0 + 2, pos.1 - 2)));
-        moves.push(Move::new(pos, (pos.0 - 2, pos.1 + 2)));
-        moves.push(Move::new(pos, (pos.0 - 2, pos.1 - 2)));
+        let piece = self.at(pos).unwrap();
 
-        moves.retain(|&m| self.is_move_legal(m));
+        let moves = vec![
+            Move::new(pos, (pos.0 + 1, pos.1 + 1)),
+            Move::new(pos, (pos.0 + 1, pos.1 - 1)),
+            Move::new(pos, (pos.0 - 1, pos.1 + 1)),
+            Move::new(pos, (pos.0 - 1, pos.1 - 1)),
+            Move::new(pos, (pos.0 + 2, pos.1 + 2)),
+            Move::new(pos, (pos.0 + 2, pos.1 - 2)),
+            Move::new(pos, (pos.0 - 2, pos.1 + 2)),
+            Move::new(pos, (pos.0 - 2, pos.1 - 2))
+        ];
 
-        return moves;
+        let (kill_moves, normal_moves): (Vec<Move>, Vec<Move>) = moves
+            .into_iter()
+            .partition(|m| self.is_kill_move(m, piece.player));
+
+        // If there are killing moves, the player cannot execute non-kill moves
+        if kill_moves.is_empty() {
+            return normal_moves.into_iter().filter(|m| self.is_move_legal(*m)).collect();
+        } else {
+            return kill_moves.into_iter().filter(|m| self.is_move_legal(*m)).collect();
+        }
     }
 
     fn move_piece(&mut self, m: Move) {
@@ -411,7 +441,7 @@ fn update(rl: &mut RaylibHandle, board: &mut Board, mouse: &Vector2) {
             board.select((row, col));
         } else if board.is_selected() && board.at(board.get_selected()).unwrap().player == board.player_turn {
             let m = Move::new(board.get_selected(), (row, col));
-            if board.is_move_legal(m) {
+            if board.get_legal_moves(board.get_selected()).contains(&m) {
                 board.deselect();
                 board.move_piece(m);
             }
