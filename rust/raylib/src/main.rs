@@ -219,21 +219,27 @@ impl Board {
             return false;
         }
 
+        let from = m.from;
+        let to = m.to;
         let dir = match player {
             Player::RED => -1,
             Player::BLACK => 1
         };
 
         // Normal moves
-        if m.to == (m.from.0 + dir, m.from.1 - 1) || m.to == (m.from.0 + dir, m.from.1 + 1) {
+        if to == (from.0 + dir, from.1 - 1) || to == (from.0 + dir, from.1 + 1) {
             return true;
         }
 
-        // Kills
-        if (m.to == (m.from.0 + 2 * dir, m.from.1 + 2) && self.at((m.from.0 + dir, m.from.1 + 1)).map_or(false, |piece| piece.player != player))
-            || (m.to == (m.from.0 + 2 * dir, m.from.1 - 2) && self.at((m.from.0 + dir, m.from.1 - 1)).map_or(false, |piece| piece.player != player))
-        {
-            return true;
+        let kill_moves = vec![
+            (from.0 + 2 * dir, from.1 - 2, from.0 + dir, from.1 - 1),
+            (from.0 + 2 * dir, from.1 + 2, from.0 + dir, from.1 + 1)
+        ];
+
+        for &(x_to, y_to, x_mid, y_mid) in &kill_moves {
+            if to == (x_to, y_to) && self.at((x_mid, y_mid)).map_or(false, |piece| piece.player != player) {
+                return true;
+            }
         }
 
         return false;
@@ -244,7 +250,28 @@ impl Board {
             return false;
         }
 
-        return true;
+        let from = m.from;
+        let to = m.to;
+
+        // Normal moves
+        if (to.0 == from.0 - 1 || to.0 == from.0 + 1) && (to.1 == from.1 - 1 || to.1 == from.1 + 1) {
+            return true;
+        }
+
+        let kill_moves = vec![
+            (from.0 - 2, from.1 - 2, from.0 - 1, from.1 - 1),
+            (from.0 - 2, from.1 + 2, from.0 - 1, from.1 + 1),
+            (from.0 + 2, from.1 - 2, from.0 + 1, from.1 - 1),
+            (from.0 + 2, from.1 + 2, from.0 + 1, from.1 + 1)
+        ];
+
+        for &(x_to, y_to, x_mid, y_mid) in &kill_moves {
+            if to == (x_to, y_to) && self.at((x_mid, y_mid)).map_or(false, |piece| piece.player != player) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     fn is_move_legal(&self, m: Move) -> bool {
