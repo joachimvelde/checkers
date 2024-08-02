@@ -22,6 +22,7 @@ pub struct Move {
     pub to: (i32, i32)
 }
 
+#[derive(Clone)]
 pub struct Board {
     pub pieces: Vec<Option<Piece>>,
     pub player_turn: Player,
@@ -38,6 +39,12 @@ impl Piece {
 impl Move {
     pub fn new(from: (i32, i32), to: (i32, i32)) -> Self {
         Self { from, to }
+    }
+
+    pub fn default() -> Self {
+        Self {
+            from: (0, 0),
+            to: (0, 0) }
     }
 }
 
@@ -335,6 +342,16 @@ impl Board {
         } else {
             return kill_moves.into_iter().filter(|m| self.is_move_legal(*m)).collect();
         }
+    }
+
+    pub fn get_all_legal_moves(&self, player: Player) -> Vec<Move> {
+        let mut moves: Vec<Move> = Vec::new();
+
+        for piece in self.get_pieces(player) {
+            moves.append(&mut self.get_legal_moves(piece).to_vec());
+        }
+
+        return moves;
     }
 
     pub fn move_piece(&mut self, m: Move) {

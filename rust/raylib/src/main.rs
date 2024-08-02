@@ -87,9 +87,9 @@ fn update(rl: &mut RaylibHandle, board: &mut Board, mouse: &Vector2) {
     let (row, col) = ((mouse.y / 100.0).floor() as i32, (mouse.x / 100.0).floor() as i32);
 
     if board.get_turn() == Player::BLACK {
-        let m = make_move(&board);
-        println!("{:?}", m);
+        let m = get_bot_move(&board);
         board.move_piece(m);
+        println!("{}", state_value(&board));
     } else if rl.is_mouse_button_pressed(raylib::consts::MouseButton::MOUSE_BUTTON_LEFT) {
         if board.at((row, col)).is_some() && board.at((row, col)).unwrap().player == board.get_turn() {
             board.select((row, col));
@@ -118,6 +118,8 @@ fn main() {
         .title("Checkers")
         .build();
 
+    let mut d = rl.begin_drawing(&thread);
+    draw(d, &board, &width, &height);
     while !rl.window_should_close() {
         let mouse: Vector2 = rl.get_mouse_position();
         update(&mut rl, &mut board, &mouse);
