@@ -315,22 +315,39 @@ impl Board {
         return false;
     }
 
-    // BUG: Down left/right gives no moves for red
     pub fn get_legal_moves(&self, pos: (i32, i32)) -> Vec<Move> {
         assert!(self.at(pos).is_some());
 
         let piece = self.at(pos).unwrap();
+        let moves: Vec<Move>;
 
-        let moves = vec![
-            Move::new(pos, (pos.0 + 1, pos.1 + 1)),
-            Move::new(pos, (pos.0 + 1, pos.1 - 1)),
-            Move::new(pos, (pos.0 - 1, pos.1 + 1)),
-            Move::new(pos, (pos.0 - 1, pos.1 - 1)),
-            Move::new(pos, (pos.0 + 2, pos.1 + 2)),
-            Move::new(pos, (pos.0 + 2, pos.1 - 2)),
-            Move::new(pos, (pos.0 - 2, pos.1 + 2)),
-            Move::new(pos, (pos.0 - 2, pos.1 - 2))
-        ];
+        if piece.kind == PieceKind::KING {
+            moves = vec![
+                Move::new(pos, (pos.0 + 1, pos.1 + 1)),
+                Move::new(pos, (pos.0 + 1, pos.1 - 1)),
+                Move::new(pos, (pos.0 - 1, pos.1 + 1)),
+                Move::new(pos, (pos.0 - 1, pos.1 - 1)),
+                Move::new(pos, (pos.0 + 2, pos.1 + 2)),
+                Move::new(pos, (pos.0 + 2, pos.1 - 2)),
+                Move::new(pos, (pos.0 - 2, pos.1 + 2)),
+                Move::new(pos, (pos.0 - 2, pos.1 - 2))
+            ];
+        } else if piece.player == Player::RED {
+            moves = vec![
+                Move::new(pos, (pos.0 - 1, pos.1 + 1)),
+                Move::new(pos, (pos.0 - 1, pos.1 - 1)),
+                Move::new(pos, (pos.0 - 2, pos.1 + 2)),
+                Move::new(pos, (pos.0 - 2, pos.1 - 2))
+            ];
+        } else {
+            moves = vec![
+                Move::new(pos, (pos.0 + 1, pos.1 + 1)),
+                Move::new(pos, (pos.0 + 1, pos.1 - 1)),
+                Move::new(pos, (pos.0 + 2, pos.1 + 2)),
+                Move::new(pos, (pos.0 + 2, pos.1 - 2)),
+            ];
+        }
+
 
         let (kill_moves, normal_moves): (Vec<Move>, Vec<Move>) = moves
             .into_iter()
