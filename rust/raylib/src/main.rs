@@ -86,7 +86,11 @@ fn draw(mut d: RaylibDrawHandle, board: &Board, width: &i32, height: &i32) {
 fn update(rl: &mut RaylibHandle, board: &mut Board, mouse: &Vector2) {
     let (row, col) = ((mouse.y / 100.0).floor() as i32, (mouse.x / 100.0).floor() as i32);
 
-    if rl.is_mouse_button_pressed(raylib::consts::MouseButton::MOUSE_BUTTON_LEFT) {
+    if board.get_turn() == Player::BLACK {
+        let m = make_move(&board);
+        println!("{:?}", m);
+        board.move_piece(m);
+    } else if rl.is_mouse_button_pressed(raylib::consts::MouseButton::MOUSE_BUTTON_LEFT) {
         if board.at((row, col)).is_some() && board.at((row, col)).unwrap().player == board.get_turn() {
             board.select((row, col));
         } else if board.is_selected() && board.at(board.get_selected()).unwrap().player == board.get_turn() {
@@ -96,10 +100,10 @@ fn update(rl: &mut RaylibHandle, board: &mut Board, mouse: &Vector2) {
                 board.move_piece(m);
             }
         }
+    }
 
-        if board.is_game_over() {
-            board.reset();
-        }
+    if board.is_game_over() {
+        board.reset();
     }
 }
 

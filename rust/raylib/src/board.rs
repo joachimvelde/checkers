@@ -87,7 +87,7 @@ impl Board {
 
         for row in 0..8 {
             for col in 0..8 {
-                if self.at((row, col)).unwrap().player == player {
+                if !self.is_empty((row, col)) && self.at((row, col)).unwrap().player == player {
                     pieces.push((row, col));
                 }
             }
@@ -196,6 +196,7 @@ impl Board {
 
         for row in 0..8 {
             for col in 0..8 {
+                // TODO: Do the let Some thing here
                 let piece = self.at((row, col));
                 if piece.is_some() {
                     match piece.unwrap().player {
@@ -307,7 +308,7 @@ impl Board {
         return false;
     }
 
-    // BUG: Down left gives no moves for red
+    // BUG: Down left/right gives no moves for red
     pub fn get_legal_moves(&self, pos: (i32, i32)) -> Vec<Move> {
         assert!(self.at(pos).is_some());
 
