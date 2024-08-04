@@ -1,5 +1,5 @@
-#+title: Checkers
+#+title: Checkers bot
 
-This is a repository containing various implementations of checkers in different languages.
-The C and python versions are unfinished. The rust version is a full implementation of checkers,
-where the user plays against a bot that makes moves using the minimax algorithm with alpha-beta pruning.
+This repository contains a full implementation of checkers written in rust, which includes a bot that uses the minimax algorithm with alpha-beta pruning for the user to play against. The python version is incomplete because it was abandoned in favour of rust, but I have still kept the code.
+Interesting additions to the game would be the option for the user to change difficulty by adjusting the minimax
+depth and being able to play locally or online against another human. But to avoid this being an everlasting project, I will consider the current rust version complete, and leave this here.
