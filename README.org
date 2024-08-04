@@ -1,15 +1,5 @@
 #+title: Checkers
 
-This is a repository containing various unfinished implementations of checkers
-in different languages. Currently the most complete implementation is the rust raylib
-version, which implements the minimax algorithm to let the user play against a bot.
-Still, this implementation contains various bugs, QOL-issues and unfinished logic.
-
-* FIX:
-- The bot is not locked to a single piece when performing successive kills.
-- There is no way to handle situations where a player cannot move any pieces.
-
-* ADD:
-- Message announcing the winner
-- Perhaps some randomness to the bot so that it does not perform the same opening every game, and a way for the player
-  to change difficulty (minimax depth).
+This is a repository containing various implementations of checkers in different languages.
+The C and python versions are unfinished. The rust version is a full implementation of checkers,
+where the user plays against a bot that makes moves using the minimax algorithm with alpha-beta pruning.
