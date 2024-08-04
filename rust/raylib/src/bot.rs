@@ -6,10 +6,9 @@ const MINIMAX_DEPTH: i32 = 5;
 
 // BUG: The bot does not perform successive moves correctly (it moves different pieces)
 pub fn get_bot_move(board: &Board) -> Move {
-    thread::sleep(time::Duration::from_millis(500));
+    // thread::sleep(time::Duration::from_millis(500));
 
     let (_, m) = minimax(board, MINIMAX_DEPTH);
-    println!("In get_bot_move: {:?}", m.unwrap());
 
     return m.unwrap();
 }

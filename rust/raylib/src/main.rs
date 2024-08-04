@@ -89,7 +89,6 @@ fn update(rl: &mut RaylibHandle, board: &mut Board, mouse: &Vector2) {
     if board.get_turn() == Player::BLACK {
         let m = get_bot_move(&board);
         board.move_piece(m);
-        println!("{}", state_value(&board));
     } else if rl.is_mouse_button_pressed(raylib::consts::MouseButton::MOUSE_BUTTON_LEFT) {
         if board.at((row, col)).is_some() && board.at((row, col)).unwrap().player == board.get_turn() {
             board.select((row, col));

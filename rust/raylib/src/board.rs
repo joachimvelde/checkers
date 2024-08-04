@@ -201,12 +201,15 @@ impl Board {
         let mut reds = 0;
         let mut blacks = 0;
 
+        // NOTE: Adding this made the bot slower. Check if this is called extensively somewhere
+        if self.get_all_legal_moves(Player::RED).len() == 0 || self.get_all_legal_moves(Player::BLACK).len() == 0 {
+            return true;
+        }
+
         for row in 0..8 {
             for col in 0..8 {
-                // TODO: Do the let Some thing here
-                let piece = self.at((row, col));
-                if piece.is_some() {
-                    match piece.unwrap().player {
+                if let Some(piece) = self.at((row, col)) {
+                    match piece.player {
                         Player::RED => reds += 1,
                         Player::BLACK => blacks += 1
                     }
@@ -215,6 +218,26 @@ impl Board {
         }
 
         return reds == 0 || blacks == 0;
+    }
+
+    pub fn get_winner(&self) -> Player {
+        let mut blacks = 0;
+
+        for row in 0..8 {
+            for col in 0..8 {
+                if let Some(piece) = self.at((row, col)) {
+                    match piece.player {
+                        Player::BLACK => blacks += 1,
+                        _default => ()
+                    }
+                }
+            }
+        }
+
+        if blacks == 0 {
+            return Player::RED;
+        }
+        return Player::BLACK;
     }
 
     pub fn make_king(&mut self, pos: (i32, i32)) {
@@ -364,8 +387,12 @@ impl Board {
     pub fn get_all_legal_moves(&self, player: Player) -> Vec<Move> {
         let mut moves: Vec<Move> = Vec::new();
 
-        for piece in self.get_pieces(player) {
-            moves.append(&mut self.get_legal_moves(piece).to_vec());
+        if self.is_successive() {
+            moves = self.get_legal_moves(self.get_successive());
+        } else {
+            for piece in self.get_pieces(player) {
+                moves.append(&mut self.get_legal_moves(piece).to_vec());
+            }
         }
 
         return moves;
