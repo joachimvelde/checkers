@@ -4,7 +4,6 @@ use std::{thread, time};
 
 const MINIMAX_DEPTH: i32 = 5;
 
-// BUG: The bot does not perform successive moves correctly (it moves different pieces)
 pub fn get_bot_move(board: &Board) -> Move {
     // thread::sleep(time::Duration::from_millis(500));
 
