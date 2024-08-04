@@ -2,7 +2,7 @@ use crate::board::{Board, Move, Player, PieceKind};
 
 use std::{thread, time};
 
-const MINIMAX_DEPTH: i32 = 9;
+const MINIMAX_DEPTH: i32 = 7;
 
 pub fn get_bot_move(board: &Board) -> Move {
     // thread::sleep(time::Duration::from_millis(500));
