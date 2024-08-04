@@ -5,6 +5,7 @@ use board::*;
 use bot::*;
 
 use raylib::prelude::*;
+use std::{thread, time};
 
 const PIECE_RADIUS: f32 = 30.0;
 
@@ -74,16 +75,28 @@ fn draw_pieces(d: &mut RaylibDrawHandle, board: &Board, width: &i32, height: &i3
     }
 }
 
-fn draw(mut d: RaylibDrawHandle, board: &Board, width: &i32, height: &i32) {
+fn display_winner(d: &mut RaylibDrawHandle, player: Player, width: &i32, height: &i32) {
+    d.clear_background(Color::WHITE);
+    match player {
+        Player::RED => d.draw_text("Red wins!", width / 2 - 240, height / 2 - 50, 100, Color::LIME),
+        Player::BLACK => d.draw_text("Black wins!", width / 2 - 240, height / 2 - 50, 100, Color::LIME)
+    }
+}
+
+fn draw(mut d: RaylibDrawHandle, board: &Board, width: &i32, height: &i32, winner: Option<Player>) {
     draw_tiles(&mut d, board, width, height);
     draw_pieces(&mut d, board, width, height);
 
     let rect = Rectangle::new(0.0, 0.0, *width as f32, *height as f32);
     let colour = if board.player_turn == Player::RED { Color::RED } else { Color::BLACK };
     d.draw_rectangle_lines_ex(rect, 3.0, colour);
+
+    if let Some(player) = winner {
+        display_winner(&mut d, player, width, height);
+    }
 }
 
-fn update(rl: &mut RaylibHandle, board: &mut Board, mouse: &Vector2) {
+fn update(rl: &mut RaylibHandle, board: &mut Board, mouse: &Vector2) -> Option<Player> {
     let (row, col) = ((mouse.y / 100.0).floor() as i32, (mouse.x / 100.0).floor() as i32);
 
     if board.get_turn() == Player::BLACK {
@@ -102,8 +115,12 @@ fn update(rl: &mut RaylibHandle, board: &mut Board, mouse: &Vector2) {
     }
 
     if board.is_game_over() {
+        let winner = board.get_winner();
         board.reset();
+        return Some(winner);
     }
+
+    return None;
 }
 
 fn main() {
@@ -118,12 +135,16 @@ fn main() {
         .build();
 
     let mut d = rl.begin_drawing(&thread);
-    draw(d, &board, &width, &height);
+    draw(d, &board, &width, &height, None);
     while !rl.window_should_close() {
         let mouse: Vector2 = rl.get_mouse_position();
-        update(&mut rl, &mut board, &mouse);
+        let winner = update(&mut rl, &mut board, &mouse);
 
         let mut d = rl.begin_drawing(&thread);
-        draw(d, &board, &width, &height);
+        draw(d, &board, &width, &height, winner);
+
+        if winner.is_some() {
+            thread::sleep(time::Duration::from_millis(5000));
+        }
     }
 }
